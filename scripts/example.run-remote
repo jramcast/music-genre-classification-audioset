@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+
+DEST_DIR=""
+PIP_INSTALL=1
+
+USER=""
+HOST=""
+PORT=""
+HOST_DATA_DIR=""
+
+
+rsync -azP \
+    -e "ssh -p $PORT" \
+    --exclude=*.pyc --exclude=.* --exclude=__pycache__ \
+    --exclude=notebooks --exclude=downloads --exclude=workspace --exclude=other_tests \
+    . $USER@$HOST:$DEST_DIR
+
+
+ssh -p $PORT $USER@$HOST BASE_DIR=$DEST_DIR DATA_DIR=$HOST_DATA_DIR PIP_INSTALL=$PIP_INSTALL 'bash -is' << 'ENDSSH'
+    cd $BASE_DIR
+
+    if [ "$PIP_INSTALL" = 1 ]
+    then
+        pipenv install --dev
+    fi
+
+    CUDA_VISIBLE_DEVICES=0,1 pipenv run python main.py
+ENDSSH
+
+
+
+

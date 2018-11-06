@@ -1,7 +1,11 @@
-from music_genre.classification.bayes import BayesClassifier
+import os
+from music_genre.infrastructure.data import AudiosetDataLoader
 
 
 if __name__ == "__main__":
 
-    classifier = BayesClassifier()
-    classifier.run()
+    datadir = os.path.abspath(
+        "./downloads/audioset/audioset_v1_embeddings/bal_train")
+
+    data_loader = AudiosetDataLoader(datadir)
+    data_loader.load()
