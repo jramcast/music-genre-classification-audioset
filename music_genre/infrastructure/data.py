@@ -11,23 +11,19 @@ class AudiosetDataLoader:
 
         iterator = self._create_data_load_graph()
 
-        total = 0
-
         with tf.Session() as sess:
 
             while True:
                 try:
                     next_element = iterator.get_next()
-                    (video_id, features, labels) = sess.run(next_element)
-                    total +=1
-                    print(video_id)
+                    (video_ids_batch, features_batch, labels_batch) = sess.run(next_element)
                     # print(features)
                     # print(labels)
-                    print(total)
-                    print('----------------------------------------')
+                    for id in video_ids_batch:
+                        yield id
                 except tf.errors.OutOfRangeError:
                     print('FINISH')
-                    break
+                    raise StopIteration
 
     def _create_data_load_graph(self):
 
@@ -42,7 +38,7 @@ class AudiosetDataLoader:
         dataset = tf.data.TFRecordDataset(self.filenames)
         dataset = dataset.map(self._read_record, num_parallel_calls=8)
         dataset = dataset.filter(only_10_seconds)
-        dataset = dataset.batch(128)
+        dataset = dataset.batch(1024)
         iterator = dataset.make_one_shot_iterator()
         return iterator
 

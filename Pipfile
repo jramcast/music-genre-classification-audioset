@@ -9,6 +9,7 @@ rope = "*"
 
 [packages]
 tensorflow = "*"
+sklearn = "*"
 
 [requires]
 python_version = "3.6"
