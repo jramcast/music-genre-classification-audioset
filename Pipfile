@@ -5,6 +5,7 @@ name = "pypi"
 
 [dev-packages]
 "flake8" = "*"
+rope = "*"
 
 [packages]
 tensorflow = "*"
