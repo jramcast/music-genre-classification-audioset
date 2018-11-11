@@ -12,6 +12,6 @@ if __name__ == "__main__":
     print(datadir)
 
     data_loader = AudiosetDataLoader(datadir)
-    for id in data_loader.load():
-        print('ID', id)
+    ids, X, y = data_loader.load()
+    print(X[0])
 

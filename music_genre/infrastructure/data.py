@@ -1,5 +1,6 @@
 import os
 import tensorflow as tf
+import numpy as np
 
 
 class AudiosetDataLoader:
@@ -13,17 +14,41 @@ class AudiosetDataLoader:
 
         with tf.Session() as sess:
 
+            ids = np.array([])
+            X = np.ndarray((0, 10, 128))
+            y = np.ndarray((0, 527))
+
             while True:
                 try:
                     next_element = iterator.get_next()
-                    (video_ids_batch, features_batch, labels_batch) = sess.run(next_element)
-                    # print(features)
-                    # print(labels)
-                    for id in video_ids_batch:
-                        yield id
+                    (ids_batch, features_batch, labels_batch) = sess.run(
+                        next_element)
+                    # print(ids_batch.shape)
+                    # print('X', features_batch.shape)
+                    # print('y', labels_batch.dense_shape)
+                    # sdf = 0
+                    # for idx in labels_batch.indices:
+                    #     # print(batch_idx)
+                    #     print(idx, labels_batch[idx.astype(int)])
+                    print(labels_batch.indices.shape)
+                    labels_batch = tf.sparse.to_dense(labels_batch, default_value=-1).eval()
+                    print(labels_batch)
+                    print(labels_batch.shape)
+                    print('++++++++' * 2)
+
+                    # for i in range(len(labels_batch)):
+
+                    ids = np.concatenate([ids, ids_batch])
+                    X = np.concatenate([X, features_batch], axis=0)
+                    # y = np.concatenate([y, labels_batch], axis=0)
+
+
+
                 except tf.errors.OutOfRangeError:
-                    print('FINISH')
-                    raise StopIteration
+                    break
+                    # raise StopIteration
+
+            return ids, X, y
 
     def _create_data_load_graph(self):
 
@@ -38,7 +63,7 @@ class AudiosetDataLoader:
         dataset = tf.data.TFRecordDataset(self.filenames)
         dataset = dataset.map(self._read_record, num_parallel_calls=8)
         dataset = dataset.filter(only_10_seconds)
-        dataset = dataset.batch(1024)
+        dataset = dataset.batch(2048)
         iterator = dataset.make_one_shot_iterator()
         return iterator
 
@@ -65,8 +90,6 @@ class AudiosetDataLoader:
         # Any preprocessing here ...
         video_id = context['video_id']
         labels = context['labels']
-        # NUM_CLASSES = 527
-        # labels = tf.one_hot(context['labels'], NUM_CLASSES)
         return (video_id, features, labels)
 
     def _discover_filenames(self, datadir):
