@@ -1,6 +1,10 @@
 import os
+import time
+import numpy as np
 from music_genre.infrastructure.data import AudiosetDataLoader
 from sklearn.model_selection import train_test_split
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.naive_bayes import GaussianNB
 
 
 if __name__ == "__main__":
@@ -13,10 +17,27 @@ if __name__ == "__main__":
 
     data_loader = AudiosetDataLoader(datadir)
     ids, X, y = data_loader.load()
-    print(ids[0])
+    # Redimension 10 secs * 128 features to 1280 features
+    X = np.array(X).reshape(-1, 1280)
 
-    for i in range(len(y[0])):
-        if y[0][i] == 1:
-            print(i)
-    # print(y[0])
+
+    X_train, X_validate, y_train, y_validate = train_test_split(
+        X,
+        y,
+        test_size=0.3,
+        random_state=42
+    )
+
+    print(X_train.shape)
+    print(y_train.shape)
+
+    classifier = OneVsRestClassifier(GaussianNB(), n_jobs=-1)
+
+    print("Training {}...".format(classifier))
+    start_time = time.time()
+
+    classifier.fit(X_train, y_train)
+    print("Training data time: {:.3f} s".format(time.time() - start_time))
+
+
 
