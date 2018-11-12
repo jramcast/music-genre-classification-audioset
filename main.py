@@ -13,5 +13,10 @@ if __name__ == "__main__":
 
     data_loader = AudiosetDataLoader(datadir)
     ids, X, y = data_loader.load()
-    print(X[0])
+    print(ids[0])
+
+    for i in range(len(y[0])):
+        if y[0][i] == 1:
+            print(i)
+    # print(y[0])
 

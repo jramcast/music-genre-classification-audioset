@@ -1,6 +1,7 @@
 import os
 import tensorflow as tf
 import numpy as np
+from sklearn import preprocessing
 
 
 class AudiosetDataLoader:
@@ -23,27 +24,14 @@ class AudiosetDataLoader:
                     next_element = iterator.get_next()
                     (ids_batch, features_batch, labels_batch) = sess.run(
                         next_element)
-                    # print(ids_batch.shape)
-                    # print('X', features_batch.shape)
-                    # print('y', labels_batch.dense_shape)
-                    # sdf = 0
-                    # for idx in labels_batch.indices:
-                    #     # print(batch_idx)
-                    #     print(idx, labels_batch[idx.astype(int)])
-                    print(labels_batch.indices.shape)
-                    labels_batch = tf.sparse.to_dense(labels_batch, default_value=-1).eval()
-                    print(labels_batch)
-                    print(labels_batch.shape)
-                    print('++++++++' * 2)
-
-                    # for i in range(len(labels_batch)):
-
+                    labels_batch = tf.sparse.to_dense(labels_batch).eval()
+                    # only trim 0s from the back(b) of the array
+                    labels_batch = np.array([np.trim_zeros(row, trim='b') for row in labels_batch])
+                    lb = preprocessing.MultiLabelBinarizer(classes=range(527))
+                    labels_batch = lb.fit_transform(labels_batch)
                     ids = np.concatenate([ids, ids_batch])
                     X = np.concatenate([X, features_batch], axis=0)
-                    # y = np.concatenate([y, labels_batch], axis=0)
-
-
-
+                    y = np.concatenate([y, labels_batch], axis=0)
                 except tf.errors.OutOfRangeError:
                     break
                     # raise StopIteration
