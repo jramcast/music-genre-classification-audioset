@@ -125,7 +125,7 @@ def log_metrics_per_class(stats, music_classes, sortkey='AP', top=10):
         ))
 
 
-def get_avg_stats(output, target, classes=None):
+def get_avg_stats(output, target, classes=None, num_classes=10):
     """Average predictions of different iterations and compute stats
     """
 
@@ -143,14 +143,13 @@ def get_avg_stats(output, target, classes=None):
     dprime = d_prime(mAUC)
 
     if classes:
-        log_metrics_per_class(stats, classes, top=30)
+        log_metrics_per_class(stats, classes, top=num_classes)
 
     print("mAP: {:.6f}".format(mAP))
     print("AUC: {:.6f}".format(mAUC))
     print("d_prime: {:.6f}".format(dprime))
     print("mPrecision: {:.6f}".format(m_precision))
     print("mRecall: {:.6f}".format(m_recall))
-    print("mAccuracy: {:.6f}".format(m_accuracy))
     print("mf1: {:.6f}".format(f1))
 
     return mAP, mAUC, d_prime(mAUC)
