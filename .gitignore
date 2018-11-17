@@ -108,3 +108,4 @@ venv.bak/
 
 # Local dev scripts
 scripts/run*
+scripts/upload*

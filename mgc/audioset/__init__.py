@@ -10,7 +10,8 @@ def load_music_genre_instances(datadir):
 
     print('# Music classes', len(MUSIC_GENRE_CLASSES))
 
-    data_loader = AudiosetDataLoader(datadir)
+    classes_indexes = [c['index'] for c in MUSIC_GENRE_CLASSES]
+    data_loader = AudiosetDataLoader(datadir, classes_indexes)
     ids, X, y = data_loader.load()
     # Redimension 10 secs * 128 features to 1280 features
     X = np.array(X).reshape(-1, 1280)

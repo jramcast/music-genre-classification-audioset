@@ -1,13 +1,15 @@
 import os
 import tensorflow as tf
 import numpy as np
+import logging
 from sklearn import preprocessing
 
 
 class AudiosetDataLoader:
 
-    def __init__(self, datadir):
+    def __init__(self, datadir, class_indexes):
         self.filenames = list(self._discover_filenames(datadir))
+        self.class_indexes = class_indexes
 
     def load(self):
 
@@ -20,18 +22,23 @@ class AudiosetDataLoader:
             y = np.ndarray((0, 527))
 
             while True:
+                logging.debug('Loading')
                 try:
                     next_element = iterator.get_next()
                     (ids_batch, features_batch, labels_batch) = sess.run(
                         next_element)
                     labels_batch = tf.sparse.to_dense(labels_batch).eval()
                     # only trim 0s from the back(b) of the array
-                    labels_batch = np.array([np.trim_zeros(row, trim='b') for row in labels_batch])
+                    labels_batch = np.array(
+                        [np.trim_zeros(row, trim='b') for row in labels_batch]
+                    )
                     lb = preprocessing.MultiLabelBinarizer(classes=range(527))
                     labels_batch = lb.fit_transform(labels_batch)
+                    logging.debug('Loaded')
                     ids = np.concatenate([ids, ids_batch])
                     X = np.concatenate([X, features_batch], axis=0)
                     y = np.concatenate([y, labels_batch], axis=0)
+                    logging.debug('Added to numpy array %s', X.shape)
                 except tf.errors.OutOfRangeError:
                     break
                     # raise StopIteration
@@ -43,15 +50,24 @@ class AudiosetDataLoader:
         def only_10_seconds(video_id, features, labels):
             shape = tf.shape(features)
             res = tf.equal(shape[0], 10)
-            # tf.print(shape[0], output_stream=sys.stdout)
-            # tf.print(res, output_stream=sys.stdout)
             return res
+
+        def only_samples_for_classes(video_id, features, labels):
+            # we convert 1-dimension arrays to 2-dimension arrays
+            # because set_intersection requires at least 2 dimensions
+            wanted = tf.constant(self.class_indexes)[None, :]
+            # labels are int64 and wanted values are int32 so we need to cast them
+            present = tf.cast(labels.values, tf.int32)[None, :]
+            intersection = tf.sets.set_intersection(wanted, present)
+            intersection_not_empty = tf.not_equal(tf.size(intersection), 0)
+            return intersection_not_empty
 
         # Create a list of filenames and pass it to a queue
         dataset = tf.data.TFRecordDataset(self.filenames)
         dataset = dataset.map(self._read_record, num_parallel_calls=8)
+        dataset = dataset.filter(only_samples_for_classes)
         dataset = dataset.filter(only_10_seconds)
-        dataset = dataset.batch(2048)
+        dataset = dataset.batch(200000)
         iterator = dataset.make_one_shot_iterator()
         return iterator
 

@@ -29,7 +29,7 @@ def run():
     logging.info('Training dataset X shape: %s', X_train.shape)
     logging.info('Training dataset y shape: %s', y_train.shape)
 
-    classifier = OneVsRestClassifier(GaussianNB(), n_jobs=-1)
+    classifier = OneVsRestClassifier(GaussianNB(), n_jobs=6)
 
     logging.info('Training started')
     start_time = time.time()
