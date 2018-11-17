@@ -20,6 +20,12 @@ def run():
     datadir = os.path.abspath(datadir)
 
     ids, X, y = audioset.load_music_genre_instances(datadir)
+    # Filter only data targeted as music
+    y = audioset.transform.take_y_for_classes(y, MUSIC_GENRE_CLASSES)
+
+    ids, X, y = audioset.load_music_genre_instances(datadir)
+    # Filter only data targeted as music
+    y = audioset.transform.take_y_for_classes(y, MUSIC_GENRE_CLASSES)
 
     (X_train,
      X_validate,

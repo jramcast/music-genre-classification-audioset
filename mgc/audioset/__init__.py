@@ -16,7 +16,4 @@ def load_music_genre_instances(datadir):
     # Redimension 10 secs * 128 features to 1280 features
     X = np.array(X).reshape(-1, 1280)
 
-    # Filter only data targeted as music
-    X, y = transform.subset_by_class(X, y, MUSIC_GENRE_CLASSES)
-
     return ids, X, y

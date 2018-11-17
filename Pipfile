@@ -16,4 +16,4 @@ sklearn = "*"
 python_version = "3.6"
 
 [scripts]
-test = "pytest mgc/tests"
+test = "pytest mgc/tests -W ignore"
