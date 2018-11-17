@@ -19,4 +19,4 @@ def load_music_genre_instances(datadir):
     # Filter only data targeted as music
     X, y = transform.subset_by_class(X, y, MUSIC_GENRE_CLASSES)
 
-    return X, y
+    return ids, X, y

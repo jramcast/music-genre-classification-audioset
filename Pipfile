@@ -6,6 +6,7 @@ name = "pypi"
 [dev-packages]
 "flake8" = "*"
 rope = "*"
+pytest = "*"
 
 [packages]
 tensorflow = "*"
@@ -13,3 +14,6 @@ sklearn = "*"
 
 [requires]
 python_version = "3.6"
+
+[scripts]
+test = "pytest mgc/tests"

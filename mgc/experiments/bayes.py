@@ -19,7 +19,7 @@ def run():
     )
     datadir = os.path.abspath(datadir)
 
-    X, y = audioset.load_music_genre_instances(datadir)
+    ids, X, y = audioset.load_music_genre_instances(datadir)
 
     (X_train,
      X_validate,
