@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+
+DEST_DIR=""
+PIP_INSTALL=0
+
+USER=""
+HOST=""
+PORT=""
+HOST_DATA_DIR=""
+
+
+rsync -azP \
+    -e "ssh -p $PORT" \
+    --exclude=*.pyc --exclude=.* --exclude=__pycache__ \
+    --exclude=downloads --exclude=workspace \
+    . $USER@$HOST:$DEST_DIR
+
