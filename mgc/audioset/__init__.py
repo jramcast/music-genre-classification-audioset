@@ -1,5 +1,5 @@
 import numpy as np
-from . import ontology, transform
+from . import ontology
 from .loader import AudiosetDataLoader
 
 

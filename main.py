@@ -24,7 +24,7 @@ def parse_args():
 def setup_logging():
     logfile = 'logs/bayes_{}.log'.format(datetime.now().isoformat())
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging.INFO,
         filename=logfile,
         format='%(asctime)s %(message)s')
 
