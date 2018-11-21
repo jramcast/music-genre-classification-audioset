@@ -1,1 +1,1 @@
-DATA_DIR="<<BASE_PATH>>/audioset_v1_embeddings/unbal_train" python main.py bayes
+DATA_DIR="<<BASE_PATH>>/audioset_v1_embeddings/unbal_train" python main.py $2

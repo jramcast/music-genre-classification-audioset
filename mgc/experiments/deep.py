@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 from keras import backend as K
 from keras.layers import (Input, Dense, BatchNormalization, Dropout,
-                          Activation)
+                          Activation, Flatten)
 
 from mgc import metrics, audioset
 
@@ -29,32 +29,28 @@ def train():
         './downloads/audioset/audioset_v1_embeddings/bal_train'
     )
     datadir = os.path.abspath(datadir)
-    iterator = audioset.load_music_genre_instances_as_tf(datadir)
+    video_id, features, labels = audioset.load_music_genre_instances_as_tf(datadir)
 
-    model = build_model(iterator)
+    model = build_model(features)
     model.compile(optimizer=keras.optimizers.RMSprop(lr=2e-3, decay=1e-5),
-                  loss='binary_crossentropy')
+                  loss='binary_crossentropy',
+                  target_tensors=[labels])
 
-    # Fit the model using data from the TFRecord data tensors.
-    coord = tf.train.Coordinator()
-    threads = tf.train.start_queue_runners(sess, coord)
+    # Fit the
     model.fit(
         epochs=epochs,
-        steps_per_epoch=int(np.ceil(20000/ float(batch_size))))
-
-    # Clean up the TF session.
-    coord.request_stop()
-    coord.join(threads)
-    K.clear_session()
+        steps_per_epoch=int(np.ceil(2000/ float(batch_size))))
 
 
-def build_model(input, num_units=100, classes_num=527):
+
+def build_model(features, num_units=100, classes_num=527):
     drop_rate = 0.5
 
     # Embedded layers
-    input_layer = Input(shape=(1280,))
+    input_layer = Input(tensor=features)
+    input_layer = Flatten(input_shape=(-1, 10, 128))(input_layer)
 
-    a1 = Dense(num_units)(input_layer)
+    a1 = Dense((num_units))(input_layer)
     a1 = BatchNormalization()(a1)
     a1 = Activation('relu')(a1)
     a1 = Dropout(drop_rate)(a1)

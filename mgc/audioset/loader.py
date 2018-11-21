@@ -5,6 +5,10 @@ import logging
 from sklearn import preprocessing
 
 
+BATCH_SIZE = 2000
+NUM_CLASSES = 527
+
+
 class AudiosetDataLoader:
 
     def __init__(self, datadir, class_indexes):
@@ -19,7 +23,7 @@ class AudiosetDataLoader:
 
             ids = np.array([])
             X = np.ndarray((0, 10, 128))
-            y = np.ndarray((0, 527))
+            y = np.ndarray((0, NUM_CLASSES))
 
             while True:
                 logging.debug('Loading')
@@ -32,7 +36,7 @@ class AudiosetDataLoader:
                     labels_batch = np.array(
                         [np.trim_zeros(row, trim='b') for row in labels_batch]
                     )
-                    lb = preprocessing.MultiLabelBinarizer(classes=range(527))
+                    lb = preprocessing.MultiLabelBinarizer(classes=range(NUM_CLASSES))
                     labels_batch = lb.fit_transform(labels_batch)
                     logging.debug('Loaded')
                     ids = np.concatenate([ids, ids_batch])
@@ -53,11 +57,15 @@ class AudiosetDataLoader:
         # Maps the parser on every filepath in the array. You can set the number of parallel loaders here
         dataset = dataset.map(self._read_record, num_parallel_calls=8)
 
+        # Filter only certain data
+        dataset = dataset.filter(self.only_samples_for_classes)
+        dataset = dataset.filter(self.only_10_seconds)
+
         # This dataset will go on forever
         dataset = dataset.repeat()
 
         # Set the number of datapoints you want to load and shuffle
-        dataset = dataset.shuffle(SHUFFLE_BUFFER)
+        # dataset = dataset.shuffle(SHUFFLE_BUFFER)
 
         # Set the batchsize
         dataset = dataset.batch(BATCH_SIZE)
@@ -66,17 +74,14 @@ class AudiosetDataLoader:
         iterator = dataset.make_one_shot_iterator()
 
         # Create your tf representation of the iterator
-        image, label = iterator.get_next()
+        video_id, features, labels = iterator.get_next()
 
-        # Bring your picture back in shape
-        image = tf.reshape(image, [-1, 256, 256, 1])
+        tf.print(labels)
 
         # Create a one hot array for your labels
-        label = tf.one_hot(label, NUM_CLASSES)
+        labels = tf.one_hot(labels.values, NUM_CLASSES)
 
-        return image, label
-
-        return self._create_data_load_graph()
+        return video_id, features, labels
 
     def _create_data_load_graph(self):
         # Create a list of filenames and pass it to a queue
@@ -84,7 +89,7 @@ class AudiosetDataLoader:
         dataset = dataset.map(self._read_record, num_parallel_calls=8)
         dataset = dataset.filter(self.only_samples_for_classes)
         dataset = dataset.filter(self.only_10_seconds)
-        dataset = dataset.batch(200000)
+        dataset = dataset.batch(BATCH_SIZE)
         iterator = dataset.make_one_shot_iterator()
         return iterator
 
@@ -128,7 +133,7 @@ class AudiosetDataLoader:
         # Any preprocessing here ...
         video_id = context['video_id']
         labels = context['labels']
-        return (video_id, features, labels)
+        return video_id, features, labels
 
     def _discover_filenames(self, datadir):
         for root, dirs, files in os.walk(datadir):
