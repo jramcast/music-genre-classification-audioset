@@ -20,9 +20,7 @@ def run():
 
 def train():
 
-    sess = K.get_session()
     epochs = 5
-    batch_size = 10000
 
     datadir = os.environ.get(
         'DATA_DIR',
@@ -36,31 +34,31 @@ def train():
                   loss='binary_crossentropy',
                   target_tensors=[labels])
 
-    # Fit the
+    # STEPS_PER_EPOCH= SUM_OF_ALL_DATASAMPLES / BATCHSIZE
+    STEPS_PER_EPOCH = 1
     model.fit(
         epochs=epochs,
-        steps_per_epoch=int(np.ceil(2000/ float(batch_size))))
-
+        steps_per_epoch=STEPS_PER_EPOCH)
 
 
 def build_model(features, num_units=100, classes_num=527):
     drop_rate = 0.5
 
-    # Embedded layers
-    input_layer = Input(tensor=features)
-    input_layer = Flatten(input_shape=(-1, 10, 128))(input_layer)
+    # The input layer flattens the 10 seconds as a single dimension of 1280
+    input_layer = Input(tensor=features, name="model_input_tensor")
+    reshape = Flatten(input_shape=(-1, 10, 128))(input_layer)
 
-    a1 = Dense((num_units))(input_layer)
-    a1 = BatchNormalization()(a1)
-    a1 = Activation('relu')(a1)
-    a1 = Dropout(drop_rate)(a1)
+    # a1 = Dense((num_units))(reshape)
+    # a1 = BatchNormalization()(a1)
+    # a1 = Activation('relu')(a1)
+    # a1 = Dropout(drop_rate)(a1)
 
-    a2 = Dense(num_units)(a1)
-    a2 = BatchNormalization()(a2)
-    a2 = Activation('relu')(a2)
-    a2 = Dropout(drop_rate)(a2)
+    # a2 = Dense(num_units)(a1)
+    # a2 = BatchNormalization()(a2)
+    # a2 = Activation('relu')(a2)
+    # a2 = Dropout(drop_rate)(a2)
 
-    output_layer = Dense(classes_num, activation='sigmoid')(a2)
+    output_layer = Dense(classes_num, activation='sigmoid')(reshape)
 
     # Build model
     return keras.models.Model(inputs=input_layer, outputs=output_layer)

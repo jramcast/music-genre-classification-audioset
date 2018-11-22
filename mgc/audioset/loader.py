@@ -5,7 +5,7 @@ import logging
 from sklearn import preprocessing
 
 
-BATCH_SIZE = 2000
+BATCH_SIZE = 1000
 NUM_CLASSES = 527
 
 
@@ -65,7 +65,7 @@ class AudiosetDataLoader:
         dataset = dataset.repeat()
 
         # Set the number of datapoints you want to load and shuffle
-        # dataset = dataset.shuffle(SHUFFLE_BUFFER)
+        # dataset = dataset.shuffle(1000)
 
         # Set the batchsize
         dataset = dataset.batch(BATCH_SIZE)
@@ -76,7 +76,8 @@ class AudiosetDataLoader:
         # Create your tf representation of the iterator
         video_id, features, labels = iterator.get_next()
 
-        tf.print(labels)
+        # Set a fixed shape of features
+        features = tf.reshape(features, [-1, 10, 128], "reshape_features")
 
         # Create a one hot array for your labels
         labels = tf.one_hot(labels.values, NUM_CLASSES)
