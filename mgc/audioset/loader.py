@@ -57,18 +57,18 @@ class AudiosetDataLoader:
         # Maps the parser on every filepath in the array. You can set the number of parallel loaders here
         dataset = dataset.map(self._read_record, num_parallel_calls=8)
 
+        # Set the batchsize
+        dataset = dataset.padded_batch(BATCH_SIZE, drop_remainder=True)
+
         # Filter only certain data
         dataset = dataset.filter(self.only_samples_for_classes)
         dataset = dataset.filter(self.only_10_seconds)
 
         # This dataset will go on forever
         dataset = dataset.repeat()
-
         # Set the number of datapoints you want to load and shuffle
         # dataset = dataset.shuffle(1000)
 
-        # Set the batchsize
-        dataset = dataset.batch(BATCH_SIZE)
 
         # Create an iterator
         iterator = dataset.make_one_shot_iterator()
