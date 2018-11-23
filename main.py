@@ -22,8 +22,8 @@ def parse_args():
     return parser.parse_args()
 
 
-def setup_logging():
-    logfile = 'logs/bayes_{}.log'.format(datetime.now().isoformat())
+def setup_logging(experiment):
+    logfile = 'logs/{}_{}.log'.format(experiment, datetime.now().isoformat())
     logging.basicConfig(
         level=logging.INFO,
         filename=logfile,
@@ -31,6 +31,6 @@ def setup_logging():
 
 
 if __name__ == "__main__":
-    setup_logging()
     args = parse_args()
+    setup_logging(args.experiment)
     EXPERIMENTS[args.experiment].run()

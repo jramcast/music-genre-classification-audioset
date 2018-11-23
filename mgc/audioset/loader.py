@@ -5,7 +5,7 @@ import logging
 from sklearn import preprocessing
 
 
-BATCH_SIZE = 1000
+BATCH_SIZE = 20
 NUM_CLASSES = 527
 
 
@@ -57,18 +57,17 @@ class AudiosetDataLoader:
         # Maps the parser on every filepath in the array. You can set the number of parallel loaders here
         dataset = dataset.map(self._read_record, num_parallel_calls=8)
 
-        # Set the batchsize
-        dataset = dataset.padded_batch(BATCH_SIZE, drop_remainder=True)
-
         # Filter only certain data
         dataset = dataset.filter(self.only_samples_for_classes)
         dataset = dataset.filter(self.only_10_seconds)
+
+        # Set the batchsize
+        dataset = dataset.batch(BATCH_SIZE)
 
         # This dataset will go on forever
         dataset = dataset.repeat()
         # Set the number of datapoints you want to load and shuffle
         # dataset = dataset.shuffle(1000)
-
 
         # Create an iterator
         iterator = dataset.make_one_shot_iterator()
@@ -80,7 +79,9 @@ class AudiosetDataLoader:
         features = tf.reshape(features, [-1, 10, 128], "reshape_features")
 
         # Create a one hot array for your labels
-        labels = tf.one_hot(labels.values, NUM_CLASSES)
+        labels = tf.sparse_to_indicator(labels, NUM_CLASSES)
+
+        labels = tf.cast(labels, tf.float32)
 
         return video_id, features, labels
 

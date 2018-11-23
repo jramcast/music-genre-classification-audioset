@@ -35,7 +35,7 @@ def train():
                   target_tensors=[labels])
 
     # STEPS_PER_EPOCH= SUM_OF_ALL_DATASAMPLES / BATCHSIZE
-    STEPS_PER_EPOCH = 1
+    STEPS_PER_EPOCH = 10
     model.fit(
         epochs=epochs,
         steps_per_epoch=STEPS_PER_EPOCH)
