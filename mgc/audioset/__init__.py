@@ -19,11 +19,11 @@ def load_music_genre_instances(datadir):
     return ids, X, y
 
 
-def load_music_genre_instances_as_tf(datadir):
+def load_music_genre_instances_as_tf(datadir, classes):
 
     print('# Music classes', len(MUSIC_GENRE_CLASSES))
 
     classes_indexes = [c['index'] for c in MUSIC_GENRE_CLASSES]
     data_loader = AudiosetDataLoader(datadir, classes_indexes)
-    return data_loader.load_as_tensor()
+    return data_loader.load_as_tensor(classes)
 

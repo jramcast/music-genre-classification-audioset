@@ -12,6 +12,7 @@ pytest = "*"
 tensorflow = "*"
 sklearn = "*"
 keras = "*"
+tensorflow-gpu = "*"
 
 [requires]
 python_version = "3.6"

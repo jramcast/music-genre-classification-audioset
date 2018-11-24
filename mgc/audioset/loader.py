@@ -5,7 +5,7 @@ import logging
 from sklearn import preprocessing
 
 
-BATCH_SIZE = 20
+BATCH_SIZE = 1000
 NUM_CLASSES = 527
 
 
@@ -49,7 +49,7 @@ class AudiosetDataLoader:
 
             return ids, X, y
 
-    def load_as_tensor(self):
+    def load_as_tensor(self, classes):
 
         # This works with arrays as well
         dataset = tf.data.TFRecordDataset(self.filenames)
@@ -81,7 +81,14 @@ class AudiosetDataLoader:
         # Create a one hot array for your labels
         labels = tf.sparse_to_indicator(labels, NUM_CLASSES)
 
+        # Only take the required classes
+        classes_ids = [c['index'] for c in classes]
+        labels = tf.gather(labels, classes_ids, axis=1)
+
+        # cast to a supported data type
         labels = tf.cast(labels, tf.float32)
+
+        tf.print(labels)
 
         return video_id, features, labels
 
