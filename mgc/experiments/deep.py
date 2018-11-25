@@ -1,14 +1,11 @@
 import os
 import logging
 import keras
-import numpy as np
 import tensorflow as tf
-from keras import backend as K
 from keras.layers import (Input, Dense, BatchNormalization, Dropout,
                           Activation, Flatten)
 
 from mgc import metrics, audioset
-from mgc.audioset import transform
 
 
 def run():
@@ -28,7 +25,7 @@ def train():
         './downloads/audioset/audioset_v1_embeddings/bal_train'
     )
     datadir = os.path.abspath(datadir)
-    video_id, features, labels = audioset.load_music_genre_instances_as_tf(datadir, audioset.MUSIC_GENRE_CLASSES)
+    video_id, features, labels = audioset.load_music_genre_subset_as_tensor(datadir, audioset.MUSIC_GENRE_CLASSES)
 
     model = build_model(features)
     model.compile(optimizer=keras.optimizers.Adam(lr=1e-3),
@@ -43,7 +40,7 @@ def train():
         './downloads/audioset/audioset_v1_embeddings/eval'
     )
     datadir_test = os.path.abspath(datadir_test)
-    _, X_test, y_test = audioset.load_music_genre_instances_as_tf(datadir_test, audioset.MUSIC_GENRE_CLASSES)
+    _, X_test, y_test = audioset.load_music_genre_subset_as_tensor(datadir_test, audioset.MUSIC_GENRE_CLASSES)
     # _, _, y_test = audioset.load_music_genre_instances(datadir_test)
     # Filter only data targeted as music
     # y_test = transform.take_y_for_classes(y_test, audioset.MUSIC_GENRE_CLASSES)
