@@ -33,10 +33,10 @@ def load_data():
     datadir_test = os.path.abspath(datadir_test)
 
     ids, X, y = audioset.load_music_genre_subset_as_numpy(datadir)
+    X = transform.flatten_features(X)
 
     _, X_test, y_test = audioset.load_music_genre_subset_as_numpy(datadir_test)
-    # Filter only data targeted as music
-    y_test = transform.take_y_for_classes(y_test, audioset.MUSIC_GENRE_CLASSES)
+    X_test = transform.flatten_features(X_test)
     return X, y, X_test, y_test
 
 

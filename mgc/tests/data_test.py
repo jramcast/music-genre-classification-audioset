@@ -9,12 +9,6 @@ from mgc.audioset import (
 )
 
 
-# audioset.load_music_genre_subset
-# audioset.to_numpy()
-
-# audioset.load_music_genre_subset_as_tensor
-
-
 DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), './data/'))
 TF_RECORDS_DIR = os.path.join(DATA_DIR, 'bal_train')
 MUSIC_GENRE_CLASSES = ontology.find_children('Music genre')
@@ -32,8 +26,7 @@ def test_load_music_genre_subset_as_numpy_match_csv_samples():
     '''
     read_audioset_balanced_csv()
     csv_samples = read_audioset_balanced_csv()
-    tf_samples = load_music_genre_subset_as_numpy(TF_RECORDS_DIR)
-    ids, X, y = tf_samples
+    ids, X, y = load_music_genre_subset_as_numpy(TF_RECORDS_DIR)
 
     for i in range(len(ids)):
         video_id = ids[i].decode('utf-8')
@@ -65,6 +58,7 @@ def tensor_to_numpy(ids_tensor, X_tensor, y_tensor):
     with tf.Session() as sess:
         ids = np.array([])
         X = np.ndarray((0, 10, 128))
+        # there are 53 music genre classes
         y = np.ndarray((0, 53))
         while True:
             try:

@@ -14,3 +14,12 @@ def subset_by_class(X, y, classes=[]):
 def take_y_for_classes(y, classes=[]):
     classes_ids = [c['index'] for c in classes]
     return y[:, classes_ids]
+
+
+def flatten_features(X: np.array) -> np.array:
+    '''
+    Flattens a (num_samples x 10 x 128) array to (num_samples x 1280).
+    Audioset provides 128 features per second, with 10 seconds per sample.
+    Use this method when you need a single dimension of features.
+    '''
+    return np.array(X).reshape(-1, 1280)

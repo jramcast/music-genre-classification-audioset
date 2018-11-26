@@ -66,15 +66,29 @@ class AudiosetLoader(abc.ABC):
         features = tf.cast(features, tf.float32)
         # Reshape features into original size
         features = tf.reshape(features, [-1, 128])
-        # Any preprocessing here ...
+
         video_id = context['video_id']
         labels = context['labels']
+
         return video_id, features, labels
 
     def _discover_filenames(self, datadir):
         for root, dirs, files in os.walk(datadir):
             for filename in files:
                 yield os.path.join(datadir, filename)
+
+
+class MusicGenreSubsetLoader:
+
+    def __init__(self, datadir: List[str], class_indexes: Dict):
+        self.filenames = list(self._discover_filenames(datadir))
+        self.class_indexes = class_indexes
+
+    def load():
+        pass
+
+    def load_test():
+        pass
 
 
 class TensorLoader(AudiosetLoader):
@@ -99,7 +113,7 @@ class TensorLoader(AudiosetLoader):
         # Create your tf representation of the iterator
         video_id, features, labels = iterator.get_next()
 
-        # Set a fixed shape of features
+        # Set a fixed shape of features (the first dimension is the batch)
         features = tf.reshape(features, [-1, 10, 128])
 
         # Create a one hot array for multilabel classification
@@ -143,20 +157,10 @@ class NPArrayLoader(AudiosetLoader):
                     (ids_batch, features_batch, labels_batch) = sess.run((
                         video_id, features, labels
                     ))
-                    # labels_batch = tf.sparse.to_dense(labels_batch).eval()
-                    # # only trim 0s from the back(b) of the array
-                    # labels_batch = np.array(
-                    #     [np.trim_zeros(row, trim='b') for row in labels_batch]
-                    # )
-                    # lb = preprocessing.MultiLabelBinarizer(classes=range(NUM_CLASSES))
-                    # labels_batch = lb.fit_transform(labels_batch)
-                    # logging.debug('Loaded')
                     ids = np.concatenate([ids, ids_batch])
                     X = np.concatenate([X, features_batch], axis=0)
                     y = np.concatenate([y, labels_batch], axis=0)
-                    # logging.debug('Added to numpy array %s', X.shape)
                 except tf.errors.OutOfRangeError:
                     break
-                    # raise StopIteration
 
             return ids, X, y

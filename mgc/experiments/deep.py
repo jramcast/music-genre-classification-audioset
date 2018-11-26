@@ -25,13 +25,11 @@ def train():
         './downloads/audioset/audioset_v1_embeddings/bal_train'
     )
     datadir = os.path.abspath(datadir)
-    video_id, features, labels = audioset.load_music_genre_subset_as_tensor(datadir, audioset.MUSIC_GENRE_CLASSES)
-
-    model = build_model(features)
+    ids, X, y = audioset.load_music_genre_subset_as_tensor(datadir)
+    model = build_model(X)
     model.compile(optimizer=keras.optimizers.Adam(lr=1e-3),
                   loss='binary_crossentropy',
-
-                  target_tensors=[labels])
+                  target_tensors=[y])
 
     # STEPS_PER_EPOCH= SUM_OF_ALL_DATASAMPLES / BATCHSIZE
     STEPS_PER_EPOCH = 10
@@ -40,10 +38,8 @@ def train():
         './downloads/audioset/audioset_v1_embeddings/eval'
     )
     datadir_test = os.path.abspath(datadir_test)
-    _, X_test, y_test = audioset.load_music_genre_subset_as_tensor(datadir_test, audioset.MUSIC_GENRE_CLASSES)
-    # _, _, y_test = audioset.load_music_genre_instances(datadir_test)
-    # Filter only data targeted as music
-    # y_test = transform.take_y_for_classes(y_test, audioset.MUSIC_GENRE_CLASSES)
+    _, X_test, y_test = audioset.load_music_genre_subset_as_tensor(
+        datadir_test, audioset.MUSIC_GENRE_CLASSES)
     metrics_cb = Metrics(X_test, y_test)
     model.fit(
         epochs=epochs,
@@ -81,7 +77,9 @@ class Metrics(keras.callbacks.Callback):
             )
 
 
-def build_model(features, num_units=100, classes_num=len(audioset.MUSIC_GENRE_CLASSES)):
+def build_model(features,
+                num_units=100,
+                classes_num=len(audioset.MUSIC_GENRE_CLASSES)):
     drop_rate = 0.5
 
     # The input layer flattens the 10 seconds as a single dimension of 1280
