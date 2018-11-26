@@ -1,12 +1,12 @@
 import os
 import csv
-import tensorflow as tf
 import numpy as np
 from mgc.audioset import (
     ontology,
     load_music_genre_subset_as_numpy,
-    load_music_genre_subset_as_tensor,
 )
+from mgc.audioset.loaders import MusicGenreSubsetLoader
+from mgc.audioset.transform import tensor_to_numpy
 
 
 DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), './data/'))
@@ -44,7 +44,8 @@ def test_load_music_genre_subset_as_tensor_match_csv_samples():
     '''
     read_audioset_balanced_csv()
     csv_samples = read_audioset_balanced_csv()
-    ids, X, y = load_music_genre_subset_as_tensor(TF_RECORDS_DIR, repeat=False)
+    loader = MusicGenreSubsetLoader(DATA_DIR, repeat=False)
+    ids, X, y = loader.load_bal()
     ids, X, y = tensor_to_numpy(ids, X, y)
 
     for i in range(len(ids)):
@@ -52,26 +53,6 @@ def test_load_music_genre_subset_as_tensor_match_csv_samples():
         csv_sample = csv_samples[video_id]
         csv_label_ids = csv_sample['positive_labels']
         assert_classes_in_csv_sample_match_tf_sample(csv_label_ids, y[i])
-
-
-def tensor_to_numpy(ids_tensor, X_tensor, y_tensor):
-    with tf.Session() as sess:
-        ids = np.array([])
-        X = np.ndarray((0, 10, 128))
-        # there are 53 music genre classes
-        y = np.ndarray((0, 53))
-        while True:
-            try:
-                (ids_batch, features_batch, labels_batch) = sess.run(
-                    (ids_tensor, X_tensor, y_tensor)
-                )
-                ids = np.concatenate([ids, ids_batch])
-                X = np.concatenate([X, features_batch], axis=0)
-                y = np.concatenate([y, labels_batch], axis=0)
-            except tf.errors.OutOfRangeError:
-                break
-
-    return ids, X, y
 
 
 def assert_classes_in_csv_sample_match_tf_sample(csv_label_ids, y_row):

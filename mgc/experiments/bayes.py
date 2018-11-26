@@ -1,7 +1,6 @@
 import os
 import time
 import logging
-from sklearn.model_selection import train_test_split
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.naive_bayes import GaussianNB
 

@@ -4,10 +4,10 @@ from typing import List, Dict, Tuple
 import tensorflow as tf
 import numpy as np
 import logging
+from mgc.audioset.ontology import MUSIC_GENRE_CLASSES, NUM_TOTAL_CLASSES
 
 
 BATCH_SIZE = 1000
-NUM_CLASSES = 527
 
 
 class AudiosetLoader(abc.ABC):
@@ -78,17 +78,74 @@ class AudiosetLoader(abc.ABC):
                 yield os.path.join(datadir, filename)
 
 
-class MusicGenreSubsetLoader:
+class MusicGenreSubsetLoader(AudiosetLoader):
 
-    def __init__(self, datadir: List[str], class_indexes: Dict):
-        self.filenames = list(self._discover_filenames(datadir))
-        self.class_indexes = class_indexes
+    def __init__(self, datadir: List[str], repeat=True, batch_size=1000):
+        self.datadir = datadir
+        self.class_indexes = [c['index'] for c in MUSIC_GENRE_CLASSES]
+        self.repeat = repeat
+        self.batch_size = batch_size
 
-    def load():
-        pass
+    def load_bal(self):
+        ids, X, y = self._load('bal_train')
+        return ids, X, y
 
-    def load_test():
-        pass
+    def load_unbal(self):
+        ids, X, y = self._load('unbal_train')
+        return ids, X, y
+
+    def load_eval(self):
+        ids, X, y = self._load('eval')
+        return ids, X, y
+
+    def _load(self, splitname):
+        # create the dataset
+        dataset = tf.data.TFRecordDataset(self._discover_filenames(splitname))
+        # Parse every sample of the dataset
+        dataset = dataset.map(self._read_record, num_parallel_calls=8)
+        # Filter only certain data
+        dataset = dataset.filter(self._only_music_genre_samples)
+        dataset = dataset.filter(self._only_10_second_samples)
+        # Set the batchsize
+        dataset = dataset.batch(self.batch_size)
+        # Start over when we are finished reading the dataset
+        if self.repeat:
+            dataset = dataset.repeat()
+        # Create an iterator
+        iterator = dataset.make_one_shot_iterator()
+        # Create your tf representation of the iterator
+        video_id, features, labels = iterator.get_next()
+        # Set a fixed shape of features (the first dimension is the batch)
+        features = tf.reshape(features, [-1, 10, 128])
+        # Create a one hot array for multilabel classification
+        labels = tf.sparse_to_indicator(labels, NUM_TOTAL_CLASSES)
+        # Only take the required music genre classes
+        labels = tf.gather(labels, self.class_indexes, axis=1)
+        # cast to a supported data type
+        labels = tf.cast(labels, tf.float32)
+        # return ids, features and labels
+        return video_id, features, labels
+
+    def _discover_filenames(self, splitname):
+        datadir = os.path.join(self.datadir, splitname)
+        for root, dirs, files in os.walk(datadir):
+            for filename in files:
+                yield os.path.join(datadir, filename)
+
+    def _only_10_second_samples(self, video_id, features, labels):
+        shape = tf.shape(features)
+        res = tf.equal(shape[0], 10)
+        return res
+
+    def _only_music_genre_samples(self, video_id, features, labels):
+        # we convert 1-dimension arrays to 2-dimension arrays
+        # because set_intersection requires at least 2 dimensions
+        wanted = tf.constant(self.class_indexes)[None, :]
+        # labels are int64 and wanted values are int32 so we need to cast them
+        present = tf.cast(labels.values, tf.int32)[None, :]
+        intersection = tf.sets.set_intersection(wanted, present)
+        intersection_not_empty = tf.not_equal(tf.size(intersection), 0)
+        return intersection_not_empty
 
 
 class TensorLoader(AudiosetLoader):
@@ -117,7 +174,7 @@ class TensorLoader(AudiosetLoader):
         features = tf.reshape(features, [-1, 10, 128])
 
         # Create a one hot array for multilabel classification
-        labels = tf.sparse_to_indicator(labels, NUM_CLASSES)
+        labels = tf.sparse_to_indicator(labels, NUM_TOTAL_CLASSES)
 
         # Only take the required classes
         labels = tf.gather(labels, self.class_indexes, axis=1)
@@ -141,7 +198,7 @@ class NPArrayLoader(AudiosetLoader):
         dataset = self._init_dataset()
         iterator = dataset.make_one_shot_iterator()
         video_id, features, labels = iterator.get_next()
-        labels = tf.sparse_to_indicator(labels, NUM_CLASSES)
+        labels = tf.sparse_to_indicator(labels, NUM_TOTAL_CLASSES)
         labels = tf.gather(labels, self.class_indexes, axis=1)
         labels = tf.cast(labels, tf.float32)
 

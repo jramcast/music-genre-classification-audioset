@@ -1,4 +1,3 @@
-import numpy as np
 from . import ontology
 from .loaders import NPArrayLoader, TensorLoader
 

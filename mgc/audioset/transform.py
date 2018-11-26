@@ -1,4 +1,6 @@
 import numpy as np
+import tensorflow as tf
+from mgc.audioset.ontology import MUSIC_GENRE_CLASSES
 
 
 def subset_by_class(X, y, classes=[]):
@@ -23,3 +25,22 @@ def flatten_features(X: np.array) -> np.array:
     Use this method when you need a single dimension of features.
     '''
     return np.array(X).reshape(-1, 1280)
+
+
+def tensor_to_numpy(ids_tensor, X_tensor, y_tensor):
+    with tf.Session() as sess:
+        ids = np.array([])
+        X = np.ndarray((0, 10, 128))
+        y = np.ndarray((0, len(MUSIC_GENRE_CLASSES)))
+        while True:
+            try:
+                (ids_batch, features_batch, labels_batch) = sess.run(
+                    (ids_tensor, X_tensor, y_tensor)
+                )
+                ids = np.concatenate([ids, ids_batch])
+                X = np.concatenate([X, features_batch], axis=0)
+                y = np.concatenate([y, labels_batch], axis=0)
+            except tf.errors.OutOfRangeError:
+                break
+
+    return ids, X, y

@@ -72,3 +72,7 @@ def get_entity_class_index(entity_id):
     except StopIteration:
         index = None
     return index
+
+
+NUM_TOTAL_CLASSES = 527
+MUSIC_GENRE_CLASSES = find_children('Music genre')
