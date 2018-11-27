@@ -1,10 +1,7 @@
 import os
 import csv
 import numpy as np
-from mgc.audioset import (
-    ontology,
-    load_music_genre_subset_as_numpy,
-)
+from mgc.audioset import ontology
 from mgc.audioset.loaders import MusicGenreSubsetLoader
 from mgc.audioset.transform import tensor_to_numpy
 
@@ -15,24 +12,6 @@ MUSIC_GENRE_CLASSES = ontology.find_children('Music genre')
 MUSIC_GENRE_CLASSES_BY_ID = {}
 for c in MUSIC_GENRE_CLASSES:
     MUSIC_GENRE_CLASSES_BY_ID[c['id']] = c
-
-
-def test_load_music_genre_subset_as_numpy_match_csv_samples():
-    '''
-    This test check if we are reading tfrecords correctly
-    in numpy format
-    by comparing the read data with the Audioset's csv format.
-    This test uses the balanced dataset
-    '''
-    read_audioset_balanced_csv()
-    csv_samples = read_audioset_balanced_csv()
-    ids, X, y = load_music_genre_subset_as_numpy(TF_RECORDS_DIR)
-
-    for i in range(len(ids)):
-        video_id = ids[i].decode('utf-8')
-        csv_sample = csv_samples[video_id]
-        csv_label_ids = csv_sample['positive_labels']
-        assert_classes_in_csv_sample_match_tf_sample(csv_label_ids, y[i])
 
 
 def test_load_music_genre_subset_as_tensor_match_csv_samples():

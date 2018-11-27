@@ -6,13 +6,14 @@ from sklearn.naive_bayes import GaussianNB
 
 
 from mgc import metrics, audioset
-from mgc.audioset import transform
+from mgc.audioset.transform import tensor_to_numpy, flatten_features
+from mgc.audioset.loaders import MusicGenreSubsetLoader
 
 
 def run():
-    """
+    '''
     Runs the experiment
-    """
+    '''
     X, y, X_test, y_test = load_data()
     classifier = train(X, y)
     evaluate(classifier, X, y, X_test, y_test)
@@ -22,20 +23,21 @@ def run():
 def load_data():
     datadir = os.environ.get(
         'DATA_DIR',
-        './downloads/audioset/audioset_v1_embeddings/bal_train'
+        './downloads/audioset/audioset_v1_embeddings/'
     )
     datadir = os.path.abspath(datadir)
-    datadir_test = os.environ.get(
-        'DATA_DIR_TEST',
-        './downloads/audioset/audioset_v1_embeddings/eval'
-    )
-    datadir_test = os.path.abspath(datadir_test)
+    logging.debug('Data dir: {}'.format(datadir))
 
-    ids, X, y = audioset.load_music_genre_subset_as_numpy(datadir)
-    X = transform.flatten_features(X)
+    loader = MusicGenreSubsetLoader(datadir, repeat=False)
 
-    _, X_test, y_test = audioset.load_music_genre_subset_as_numpy(datadir_test)
-    X_test = transform.flatten_features(X_test)
+    ids, X, y = loader.load_bal()
+    ids, X, y = tensor_to_numpy(ids, X, y)
+    X = flatten_features(X)
+
+    ids_test, X_test, y_test = loader.load_eval()
+    _, X_test, y_test = tensor_to_numpy(ids_test, X_test, y_test)
+    X_test = flatten_features(X_test)
+
     return X, y, X_test, y_test
 
 
@@ -63,6 +65,6 @@ def evaluate(classifier, X, y, X_test, y_test):
     mAP, mAUC, d_prime = metrics.get_avg_stats(
         predictions,
         y_test,
-        audioset.MUSIC_GENRE_CLASSES,
+        audioset.ontology.MUSIC_GENRE_CLASSES,
         num_classes=10
     )

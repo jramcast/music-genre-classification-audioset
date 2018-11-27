@@ -39,7 +39,7 @@ def train():
     )
     datadir_test = os.path.abspath(datadir_test)
     _, X_test, y_test = audioset.load_music_genre_subset_as_tensor(
-        datadir_test, audioset.MUSIC_GENRE_CLASSES)
+        datadir_test, audioset.ontology.MUSIC_GENRE_CLASSES)
     metrics_cb = Metrics(X_test, y_test)
     model.fit(
         epochs=epochs,
@@ -79,7 +79,7 @@ class Metrics(keras.callbacks.Callback):
 
 def build_model(features,
                 num_units=100,
-                classes_num=len(audioset.MUSIC_GENRE_CLASSES)):
+                classes_num=len(audioset.ontology.MUSIC_GENRE_CLASSES)):
     drop_rate = 0.5
 
     # The input layer flattens the 10 seconds as a single dimension of 1280
