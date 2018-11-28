@@ -4,6 +4,35 @@ from sklearn import metrics
 from scipy.stats import norm
 
 
+def get_avg_stats(output, target, classes=None, num_classes=10):
+    """Average predictions of different iterations and compute stats
+    """
+
+    # Calculate stats
+    stats = calculate_stats(output, target)
+
+    # Write out to log
+    mAP = np.mean([stat['AP'] for stat in stats])
+    mAUC = np.mean([stat['auc'] for stat in stats])
+
+    m_precision = np.mean([stat['precision'] for stat in stats])
+    m_recall = np.mean([stat['recall'] for stat in stats])
+    f1 = np.mean([stat['f1'] for stat in stats])
+    dprime = d_prime(mAUC)
+
+    if classes:
+        log_metrics_per_class(stats, classes, top=num_classes)
+
+    logging.info("mAP: {:.6f}".format(mAP))
+    logging.info("AUC: {:.6f}".format(mAUC))
+    logging.info("d_prime: {:.6f}".format(dprime))
+    logging.info("mPrecision: {:.6f}".format(m_precision))
+    logging.info("mRecall: {:.6f}".format(m_recall))
+    logging.info("mf1: {:.6f}".format(f1))
+
+    return mAP, mAUC, d_prime(mAUC)
+
+
 def calculate_stats(output, y):
     """Calculate statistics for each class
 
@@ -20,13 +49,20 @@ def calculate_stats(output, y):
 
     # Class-wise statistics
     for i in range(classes_num):
-        class_stats = calculate_class_stats(y, i, output)
+        class_stats = calculate_class_stats(output, y, i)
         stats.append(class_stats)
 
     return stats
 
 
-def calculate_class_stats(y, class_index, output):
+def calculate_class_stats(output, y, class_index):
+
+    print(y)
+    print(y.shape)
+    print(class_index)
+    print(output)
+    print(output.shape)
+
     # Average precision
     avg_precision = metrics.average_precision_score(
         y[:, class_index], output[:, class_index], average=None)
@@ -116,31 +152,3 @@ def log_metrics_per_class(stats, music_classes, sortkey='AP', top=10):
             class_info['fn'],
         ))
 
-
-def get_avg_stats(output, target, classes=None, num_classes=10):
-    """Average predictions of different iterations and compute stats
-    """
-
-    # Calculate stats
-    stats = calculate_stats(output, target)
-
-    # Write out to log
-    mAP = np.mean([stat['AP'] for stat in stats])
-    mAUC = np.mean([stat['auc'] for stat in stats])
-
-    m_precision = np.mean([stat['precision'] for stat in stats])
-    m_recall = np.mean([stat['recall'] for stat in stats])
-    f1 = np.mean([stat['f1'] for stat in stats])
-    dprime = d_prime(mAUC)
-
-    if classes:
-        log_metrics_per_class(stats, classes, top=num_classes)
-
-    logging.info("mAP: {:.6f}".format(mAP))
-    logging.info("AUC: {:.6f}".format(mAUC))
-    logging.info("d_prime: {:.6f}".format(dprime))
-    logging.info("mPrecision: {:.6f}".format(m_precision))
-    logging.info("mRecall: {:.6f}".format(m_recall))
-    logging.info("mf1: {:.6f}".format(f1))
-
-    return mAP, mAUC, d_prime(mAUC)

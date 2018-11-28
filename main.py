@@ -1,3 +1,4 @@
+import os
 import argparse
 import logging
 from datetime import datetime
@@ -5,8 +6,8 @@ from mgc.experiments import bayes, deep
 
 
 EXPERIMENTS = {
-    'bayes': bayes,
-    'deep': deep
+    'bayes': bayes.BayesExperiment,
+    'deep': deep.DeepExperiment
 }
 
 
@@ -15,22 +16,42 @@ def parse_args():
     parser.add_argument(
         'experiment',
         help='The experiment to be executed',
-        choices=[
-            'bayes', 'deep'
-        ]
+        choices=EXPERIMENTS.keys()
+    )
+    parser.add_argument(
+        '--balanced',
+        action='store_true'
     )
     return parser.parse_args()
 
 
-def setup_logging(experiment):
-    logfile = 'logs/{}_{}.log'.format(experiment, datetime.now().isoformat())
+def setup_logging(args):
+    balanced = 'bal' if args.balanced else 'unbal'
+    logfile = 'logs/{}_{}_{}.log'.format(
+        args.experiment,
+        balanced,
+        datetime.now().isoformat()
+    )
     logging.basicConfig(
         level=logging.INFO,
         filename=logfile,
         format='%(asctime)s %(message)s')
 
 
+def setup_datadir():
+    datadir = os.environ.get(
+        'DATA_DIR',
+        './downloads/audioset/audioset_v1_embeddings/'
+    )
+    datadir = os.path.abspath(datadir)
+    logging.debug('Data dir: {}'.format(datadir))
+    return datadir
+
+
 if __name__ == "__main__":
     args = parse_args()
-    setup_logging(args.experiment)
-    EXPERIMENTS[args.experiment].run()
+    setup_logging(args)
+    datadir = setup_datadir()
+    Experiment = EXPERIMENTS[args.experiment]
+    experiment = Experiment(datadir, balanced=args.balanced)
+    experiment.run()
