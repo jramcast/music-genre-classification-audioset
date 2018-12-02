@@ -55,35 +55,38 @@ def calculate_stats(output, y):
     return stats
 
 
-def calculate_class_stats(output, y, class_index):
+def calculate_class_stats(output, y_true, class_index):
 
-    print(y)
-    print(y.shape)
-    print(class_index)
+    print('expected')
+    print(y_true)
+    print(y_true.shape)
+    # print(class_index)
+    print('actual')
     print(output)
     print(output.shape)
 
     # Average precision
     avg_precision = metrics.average_precision_score(
-        y[:, class_index], output[:, class_index], average=None)
+        y_true[:, class_index], output[:, class_index], average=None)
 
     # AUC
-    if y.shape[1] > 1:
+    print('y true shape', y_true.shape)
+    if y_true.shape[1] > 1:
         auc = metrics.roc_auc_score(
-            y[:, class_index], output[:, class_index], average=None)
+            y_true[:, class_index], output[:, class_index], average=None)
     else:
         auc = 0
 
     # precission and recall
     precision = metrics.precision_score(
-        y[:, class_index], output[:, class_index] >= 0.5)
+        y_true[:, class_index], output[:, class_index] >= 0.5)
     recall = metrics.recall_score(
-        y[:, class_index], output[:, class_index] >= 0.5)
-    f1 = metrics.f1_score(y[:, class_index], output[:, class_index] >= 0.5)
+        y_true[:, class_index], output[:, class_index] >= 0.5)
+    f1 = metrics.f1_score(y_true[:, class_index], output[:, class_index] >= 0.5)
 
     # confusion matrix
     tn, fp, fn, tp = metrics.confusion_matrix(
-        y[:, class_index], output[:, class_index] >= 0.5).ravel()
+        y_true[:, class_index], output[:, class_index] >= 0.5).ravel()
 
     class_stats = {
         'AP': avg_precision,

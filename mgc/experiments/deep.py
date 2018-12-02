@@ -1,13 +1,16 @@
 import logging
-import keras
-import tensorflow as tf
-from keras.layers import (Input, Dense, BatchNormalization, Dropout,
-                          Activation, Flatten)
+import math
 
-from mgc import metrics, audioset
+import keras
+import numpy as np
+import tensorflow as tf
+from keras.layers import (Activation, BatchNormalization, Dense, Dropout,
+                          Flatten, Input)
+
+from mgc import audioset, metrics
 from mgc.audioset.loaders import MusicGenreSubsetLoader
-from mgc.experiments.base import Experiment
 from mgc.audioset.transform import tensor_to_numpy
+from mgc.experiments.base import Experiment
 
 
 class DeepExperiment(Experiment):
@@ -27,7 +30,11 @@ class DeepExperiment(Experiment):
         print('Done. Check the logs/ folder for results')
 
     def load_data(self):
-        loader = MusicGenreSubsetLoader(self.datadir, repeat=True)
+        loader = MusicGenreSubsetLoader(
+            self.datadir,
+            repeat=True,
+            batch_size=self.batch_size
+        )
 
         if self.balanced:
             ids, X, y = loader.load_bal()
@@ -36,8 +43,7 @@ class DeepExperiment(Experiment):
 
         test_loader = MusicGenreSubsetLoader(
             self.datadir,
-            repeat=False,
-            batch_size=10
+            batch_size=1
         )
         ids_test, X_test, y_test = test_loader.load_eval()
 
@@ -51,15 +57,15 @@ class DeepExperiment(Experiment):
                       target_tensors=[y])
 
         if self.balanced:
-            aprox_total_samples = 2000
+            total_samples = 2490
         else:
-            aprox_total_samples = 200000
+            total_samples = 200000
 
         metrics_cb = Metrics(X_test, y_test)
         model.fit(
             epochs=self.epochs,
             callbacks=[metrics_cb],
-            steps_per_epoch=2)
+            steps_per_epoch=math.ceil(total_samples/self.batch_size))
 
         return model
 
@@ -82,7 +88,7 @@ class DeepExperiment(Experiment):
         a2 = Activation('relu')(a2)
         a2 = Dropout(drop_rate)(a2)
 
-        output_layer = Dense(classes_num, activation='sigmoid')(reshape)
+        output_layer = Dense(classes_num, activation='sigmoid')(a2)
 
         # Build model
         return keras.models.Model(inputs=input_layer, outputs=output_layer)
@@ -112,9 +118,22 @@ class Metrics(keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs={}):
         # if epoch % 10 == 0:
         logging.info('Epoch {} stats'.format(epoch))
-        y_pred = self.model.predict(self.X, steps=1)
-        y_true = self.y.eval(session=tf.keras.backend.get_session())
-        metrics.get_avg_stats(
-            y_pred,
-            y_true
-        )
+
+        with tf.Session() as sess:
+            X, y = sess.run((self.X, self.y))
+            # print('**' * 50)
+            # print('X shape', X.shape)
+            # print('y_true shape', y.shape)
+            X = tf.convert_to_tensor([])
+            print('X tensor', X.shape)
+
+        y_pred = self.model.predict(None, steps=3)
+
+        print('y_pred shape', y_pred.shape)
+        print('--' * 50)
+
+        # y_true = self.y.eval(session=tf.keras.backend.get_session())
+        # metrics.get_avg_stats(
+        #     y_pred,
+        #     y_true
+        # )

@@ -35,7 +35,6 @@ class MusicGenreSubsetLoader:
         dataset = dataset.map(self._read_record, num_parallel_calls=8)
         # Filter only certain data
         dataset = dataset.filter(self._only_music_genre_samples)
-        dataset = dataset.filter(self._only_10_second_samples)
         # Set the batchsize
         dataset = dataset.batch(self.batch_size)
         # Start over when we are finished reading the dataset
@@ -77,7 +76,12 @@ class MusicGenreSubsetLoader:
         # Cast features into float32
         features = tf.cast(features, tf.float32)
         # Reshape features into original size
+        # Warning: not all of them include 10 seconds
+        # That's why the first dimension is unknown (-1)
         features = tf.reshape(features, [-1, 128])
+        # Reshape the feature tensor to 10 secs x 128 features
+        # This will fill missing values
+        features = resize_axis(features, axis=0, new_size=10)
 
         return video_id, features, labels
 
@@ -86,11 +90,6 @@ class MusicGenreSubsetLoader:
         for root, dirs, files in os.walk(datadir):
             for filename in files:
                 yield os.path.join(datadir, filename)
-
-    def _only_10_second_samples(self, video_id, features, labels):
-        shape = tf.shape(features)
-        res = tf.equal(shape[0], 10)
-        return res
 
     def _only_music_genre_samples(self, video_id, features, labels):
         # we convert 1-dimension arrays to 2-dimension arrays
@@ -101,3 +100,42 @@ class MusicGenreSubsetLoader:
         intersection = tf.sets.set_intersection(wanted, present)
         intersection_not_empty = tf.not_equal(tf.size(intersection), 0)
         return intersection_not_empty
+
+
+def resize_axis(tensor, axis, new_size, fill_value=0):
+    '''
+    Function from YouTube-8m supporting code:
+    https://github.com/google/youtube-8m/blob/2c94ed449737c886175a5fff1bfba7eadc4de5ac/readers.py
+
+    Truncates or pads a tensor to new_size on on a given axis.
+    Truncate or extend tensor such that tensor.shape[axis] == new_size. If the
+    size increases, the padding will be performed at the end, using fill_value.
+    Args:
+    tensor: The tensor to be resized.
+    axis: An integer representing the dimension to be sliced.
+    new_size: An integer or 0d tensor representing the new value for
+        tensor.shape[axis].
+    fill_value: Value to use to fill any new entries in the tensor. Will be
+        cast to the type of tensor.
+    Returns:
+    The resized tensor.
+    '''
+    tensor = tf.convert_to_tensor(tensor)
+    shape = tf.unstack(tf.shape(tensor))
+
+    pad_shape = shape[:]
+    pad_shape[axis] = tf.maximum(0, new_size - shape[axis])
+
+    shape[axis] = tf.minimum(shape[axis], new_size)
+    shape = tf.stack(shape)
+
+    resized = tf.concat([
+        tf.slice(tensor, tf.zeros_like(shape), shape),
+        tf.fill(tf.stack(pad_shape), tf.cast(fill_value, tensor.dtype))
+    ], axis)
+
+    # Update shape.
+    new_shape = tensor.get_shape().as_list()  # A copy is being made.
+    new_shape[axis] = new_size
+    resized.set_shape(new_shape)
+    return resized
