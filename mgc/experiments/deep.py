@@ -99,7 +99,7 @@ class DeepExperiment(Experiment):
             y_pred,
             y_test,
             audioset.ontology.MUSIC_GENRE_CLASSES,
-            num_classes=10
+            num_classes=25
         )
 
         return model
