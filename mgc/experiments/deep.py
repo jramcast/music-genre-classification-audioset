@@ -18,7 +18,7 @@ import keras.backend as K
 
 class DeepExperiment(Experiment):
 
-    def __init__(self, datadir, balanced=True, epochs=500, batch_size=1000):
+    def __init__(self, datadir, balanced=True, epochs=1000, batch_size=1000):
         self.datadir = datadir
         self.balanced = balanced
         self.epochs = epochs
