@@ -57,20 +57,11 @@ def calculate_stats(output, y):
 
 def calculate_class_stats(output, y_true, class_index):
 
-    print('expected')
-    print(y_true)
-    print(y_true.shape)
-    # print(class_index)
-    print('actual')
-    print(output)
-    print(output.shape)
-
     # Average precision
     avg_precision = metrics.average_precision_score(
         y_true[:, class_index], output[:, class_index], average=None)
 
     # AUC
-    print('y true shape', y_true.shape)
     if y_true.shape[1] > 1:
         auc = metrics.roc_auc_score(
             y_true[:, class_index], output[:, class_index], average=None)

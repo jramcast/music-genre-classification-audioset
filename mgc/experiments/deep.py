@@ -1,5 +1,7 @@
+import os
 import logging
 import math
+import tempfile
 
 import keras
 import numpy as np
@@ -11,15 +13,18 @@ from mgc import audioset, metrics
 from mgc.audioset.loaders import MusicGenreSubsetLoader
 from mgc.audioset.transform import tensor_to_numpy
 from mgc.experiments.base import Experiment
+import keras.backend as K
 
 
 class DeepExperiment(Experiment):
 
-    def __init__(self, datadir, balanced=True, epochs=50, batch_size=1000):
+    def __init__(self, datadir, balanced=True, epochs=500, batch_size=1000):
         self.datadir = datadir
         self.balanced = balanced
         self.epochs = epochs
         self.batch_size = batch_size
+        self.num_units = 100
+        self.drop_rate = 0.5
 
     def run(self):
         """
@@ -43,9 +48,12 @@ class DeepExperiment(Experiment):
 
         test_loader = MusicGenreSubsetLoader(
             self.datadir,
-            batch_size=1
+            repeat=False,
+            batch_size=self.batch_size
         )
         ids_test, X_test, y_test = test_loader.load_eval()
+
+        ids_test, X_test, y_test = tensor_to_numpy(ids_test, X_test, y_test)
 
         return X, y, X_test, y_test
 
@@ -61,34 +69,62 @@ class DeepExperiment(Experiment):
         else:
             total_samples = 200000
 
-        metrics_cb = Metrics(X_test, y_test)
+        # metrics_cb = Metrics(X_test, y_test)
         model.fit(
             epochs=self.epochs,
-            callbacks=[metrics_cb],
+            # callbacks=[metrics_cb],
             steps_per_epoch=math.ceil(total_samples/self.batch_size))
+
+        # Save the model weights.
+        weight_path = os.path.join(tempfile.gettempdir(), 'saved_wt.h5')
+        model.save_weights(weight_path)
+
+        # Clean up the TF session.
+        K.clear_session()
+
+        # Second session to test loading trained model without tensors.
+        input_layer = Input(shape=(10, 128))
+        output_layer = self.define_layers(input_layer)
+        test_model = keras.models.Model(inputs=input_layer, outputs=output_layer)
+
+        test_model.load_weights(weight_path)
+        test_model.compile(
+            optimizer=keras.optimizers.Adam(lr=1e-3),
+            loss='binary_crossentropy'
+        )
+
+        y_pred = test_model.predict(X_test)
+
+        metrics.get_avg_stats(
+            y_pred,
+            y_test,
+            audioset.ontology.MUSIC_GENRE_CLASSES,
+            num_classes=10
+        )
 
         return model
 
-    def build_model(self, X,
-                    num_units=100,
-                    classes_num=len(audioset.ontology.MUSIC_GENRE_CLASSES)):
-        drop_rate = 0.5
-
+    def define_layers(self, input):
         # The input layer flattens the 10 seconds as a single dimension of 1280
-        input_layer = Input(tensor=X, name="model_input_tensor")
-        reshape = Flatten(input_shape=(-1, 10, 128))(input_layer)
+        reshape = Flatten(input_shape=(-1, 10, 128))(input)
 
-        a1 = Dense((num_units))(reshape)
+        a1 = Dense((self.num_units))(reshape)
         a1 = BatchNormalization()(a1)
         a1 = Activation('relu')(a1)
-        a1 = Dropout(drop_rate)(a1)
+        a1 = Dropout(self.drop_rate)(a1)
 
-        a2 = Dense(num_units)(a1)
+        a2 = Dense(self.num_units)(a1)
         a2 = BatchNormalization()(a2)
         a2 = Activation('relu')(a2)
-        a2 = Dropout(drop_rate)(a2)
+        a2 = Dropout(self.drop_rate)(a2)
 
-        output_layer = Dense(classes_num, activation='sigmoid')(a2)
+        classes_num = len(audioset.ontology.MUSIC_GENRE_CLASSES)
+        predictions = Dense(classes_num, activation='sigmoid')(a2)
+        return predictions
+
+    def build_model(self, X):
+        input_layer = Input(tensor=X, name="model_input_tensor")
+        output_layer = self.define_layers(input_layer)
 
         # Build model
         return keras.models.Model(inputs=input_layer, outputs=output_layer)
