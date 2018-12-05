@@ -21,7 +21,13 @@ def get_avg_stats(output, target, classes=None, num_classes=10):
     dprime = d_prime(mAUC)
 
     if classes:
-        log_metrics_per_class(stats, classes, top=num_classes)
+        stats_per_class = log_metrics_per_class(
+            stats,
+            classes,
+            top=num_classes
+        )
+    else:
+        stats_per_class = []
 
     logging.info("mAP: {:.6f}".format(mAP))
     logging.info("AUC: {:.6f}".format(mAUC))
@@ -30,7 +36,7 @@ def get_avg_stats(output, target, classes=None, num_classes=10):
     logging.info("mRecall: {:.6f}".format(m_recall))
     logging.info("mf1: {:.6f}".format(f1))
 
-    return mAP, mAUC, d_prime(mAUC)
+    return mAP, mAUC, d_prime(mAUC), stats_per_class
 
 
 def calculate_stats(output, y):
@@ -114,6 +120,9 @@ def log_metrics_per_class(stats, music_classes, sortkey='AP', top=10):
     worst_music_classes_stats = sorted(
         music_classes_stats, key=lambda k: k[sortkey])
 
+
+    
+
     # logging.info best
     logging.info("  Best music classes:")
     for class_info in best_music_classes_stats[:top]:
@@ -146,3 +155,4 @@ def log_metrics_per_class(stats, music_classes, sortkey='AP', top=10):
             class_info['fn'],
         ))
 
+    return music_classes_stats

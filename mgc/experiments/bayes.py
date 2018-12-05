@@ -1,20 +1,17 @@
-import time
+import csv
 import logging
+import time
+
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.naive_bayes import GaussianNB
 
-
-from mgc import metrics, audioset
-from mgc.audioset.transform import tensor_to_numpy, flatten_features
+from mgc import audioset, metrics
 from mgc.audioset.loaders import MusicGenreSubsetLoader
+from mgc.audioset.transform import flatten_features, tensor_to_numpy
 from mgc.experiments.base import Experiment
 
 
 class BayesExperiment(Experiment):
-
-    def __init__(self, datadir, balanced=True):
-        self.datadir = datadir
-        self.balanced = balanced
 
     def run(self):
         '''
@@ -60,9 +57,12 @@ class BayesExperiment(Experiment):
 
         logging.info('---- Test stats ----')
         predictions = classifier.predict(X_test)
-        mAP, mAUC, d_prime = metrics.get_avg_stats(
+        mAP, mAUC, d_prime, class_stats = metrics.get_avg_stats(
             predictions,
             y_test,
             audioset.ontology.MUSIC_GENRE_CLASSES,
             num_classes=10
         )
+
+        self.save_class_stats(class_stats)
+
