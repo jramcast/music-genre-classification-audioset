@@ -9,6 +9,7 @@ from mgc import audioset, metrics
 from mgc.audioset.loaders import MusicGenreSubsetLoader
 from mgc.audioset.transform import flatten_features, tensor_to_numpy
 from mgc.experiments.base import Experiment
+from mgc.metrics import MetricsLogger
 
 
 class BayesExperiment(Experiment):
@@ -51,18 +52,20 @@ class BayesExperiment(Experiment):
         return classifier
 
     def evaluate(self, classifier, X, y, X_test, y_test):
+
+        metrics_logger = MetricsLogger(
+            classes=audioset.ontology.MUSIC_GENRE_CLASSES,
+            classsmetrics_filepath=self.classmetrics_filepath,
+            show_top_classes=25,
+            class_sort_key='ap'
+        )
+
         logging.info('---- Train stats ----')
         predictions = classifier.predict(X)
-        metrics.get_avg_stats(predictions, y)
+        metrics_logger.log(predictions, y)
 
         logging.info('---- Test stats ----')
         predictions = classifier.predict(X_test)
-        mAP, mAUC, d_prime, class_stats = metrics.get_avg_stats(
-            predictions,
-            y_test,
-            audioset.ontology.MUSIC_GENRE_CLASSES,
-            num_classes=10
-        )
+        metrics_logger.log(predictions, y_test, show_classes=True)
 
-        self.save_class_stats(class_stats)
 

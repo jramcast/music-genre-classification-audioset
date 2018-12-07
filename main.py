@@ -63,6 +63,6 @@ if __name__ == "__main__":
     experiment: base.Experiment = ConcreteExperiment(
         datadir,
         balanced=args.balanced,
-        stats_filepath=get_output_filepath(args, extension='csv'),
+        classmetrics_filepath=get_output_filepath(args, extension='csv'),
     )
     experiment.run()

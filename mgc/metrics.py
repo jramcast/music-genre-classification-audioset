@@ -1,158 +1,167 @@
 import logging
+import csv
 import numpy as np
+from collections import namedtuple
 from sklearn import metrics
 from scipy.stats import norm
+from typing import List
 
 
-def get_avg_stats(output, target, classes=None, num_classes=10):
-    """Average predictions of different iterations and compute stats
-    """
+ClassMetrics = namedtuple('ClassMetrics', [
+    'name',
+    'ap',
+    'auc',
+    'precision',
+    'recall',
+    'f1',
+    'tp',
+    'fp',
+    'tn',
+    'fn'
+])
 
-    # Calculate stats
-    stats = calculate_stats(output, target)
 
-    # Write out to log
-    mAP = np.mean([stat['AP'] for stat in stats])
-    mAUC = np.mean([stat['auc'] for stat in stats])
+class MetricsLogger:
 
-    m_precision = np.mean([stat['precision'] for stat in stats])
-    m_recall = np.mean([stat['recall'] for stat in stats])
-    f1 = np.mean([stat['f1'] for stat in stats])
-    dprime = d_prime(mAUC)
+    def __init__(self,
+                 classes=False,
+                 classsmetrics_filepath=None,
+                 show_top_classes=10,
+                 class_sort_key='ap'):
+        self.classes = classes
+        self.classsmetrics_filepath = classsmetrics_filepath
+        self.show_top_classes = show_top_classes
+        self.class_sort_key = class_sort_key
+        # Metrics
+        self.ap = None
+        self.auc = None
+        self.dprime = None
+        self.class_metrics = []
 
-    if classes:
-        stats_per_class = log_metrics_per_class(
-            stats,
-            classes,
-            top=num_classes
+    def log(self, y_predicted: np.array, y_true: np.array, show_classes=False):
+        # Calculate metrics for each class
+        metrics = self.calculate_metrics(y_predicted, y_true)
+
+        # Log average metrics among all classes
+        m_ap = np.mean([classmetrics.ap for classmetrics in metrics])
+        m_auc = np.mean([classmetrics.auc for classmetrics in metrics])
+        m_precision = np.mean([classmetrics.precision for classmetrics in metrics])
+        m_recall = np.mean([classmetrics.recall for classmetrics in metrics])
+        f1 = np.mean([classmetrics.f1 for classmetrics in metrics])
+        dprime = self.calculate_dprime(m_auc)
+
+        if show_classes:
+            self.log_classmetrics(metrics)
+            self.save_classmetrics(metrics)
+
+        logging.info("mAP: {:.6f}".format(m_ap))
+        logging.info("mAUC: {:.6f}".format(m_auc))
+        logging.info("d_prime: {:.6f}".format(dprime))
+        logging.info("mPrecision: {:.6f}".format(m_precision))
+        logging.info("mRecall: {:.6f}".format(m_recall))
+        logging.info("mf1: {:.6f}".format(f1))
+
+        self.ap = m_ap
+        self.auc = m_auc
+        self.dprime = dprime
+        self.class_metrics = metrics
+
+    def calculate_metrics(self,
+                          y_predicted: np.array,
+                          y_true: np.array) -> List[ClassMetrics]:
+        classes_num = self.get_classes_num(y_true)
+
+        metrics = []
+        for class_idx in range(classes_num):
+            class_stats = self.calculate_class_metrics(
+                y_predicted,
+                y_true,
+                class_idx
+            )
+            metrics.append(class_stats)
+
+        return metrics
+
+    def get_classes_num(self, y: np.array):
+        # 'y' has 2 dimensions (samples_num, classes_num)
+        return y.shape[-1]
+
+    def calculate_class_metrics(self,
+                                y_predicted: np.array,
+                                y_true: np.array,
+                                class_index) -> ClassMetrics:
+        # AP - Average precision
+        ap = metrics.average_precision_score(
+            y_true[:, class_index],
+            y_predicted[:, class_index],
+            average=None
         )
-    else:
-        stats_per_class = []
 
-    logging.info("mAP: {:.6f}".format(mAP))
-    logging.info("AUC: {:.6f}".format(mAUC))
-    logging.info("d_prime: {:.6f}".format(dprime))
-    logging.info("mPrecision: {:.6f}".format(m_precision))
-    logging.info("mRecall: {:.6f}".format(m_recall))
-    logging.info("mf1: {:.6f}".format(f1))
+        # AUC
+        if y_true.shape[1] > 1:
+            auc = metrics.roc_auc_score(
+                y_true[:, class_index],
+                y_predicted[:, class_index],
+                average=None
+            )
+        else:
+            auc = 0
 
-    return mAP, mAUC, d_prime(mAUC), stats_per_class
+        # precission, recall and F1
+        precision = metrics.precision_score(
+            y_true[:, class_index],
+            y_predicted[:, class_index] >= 0.5
+        )
+        recall = metrics.recall_score(
+            y_true[:, class_index],
+            y_predicted[:, class_index] >= 0.5
+        )
+        f1 = metrics.f1_score(
+            y_true[:, class_index],
+            y_predicted[:, class_index] >= 0.5
+        )
 
+        # confusion matrix
+        tn, fp, fn, tp = metrics.confusion_matrix(
+            y_true[:, class_index],
+            y_predicted[:, class_index] >= 0.5
+        ).ravel()
 
-def calculate_stats(output, y):
-    """Calculate statistics for each class
+        return ClassMetrics(
+            name=self.classes[class_index]['name'],
+            ap=ap,
+            auc=auc,
+            precision=precision,
+            recall=recall,
+            f1=f1,
+            tp=tp,
+            fp=fp,
+            tn=tn,
+            fn=fn,
+        )
 
-    Args:
-      output: 2d array, (samples_num, classes_num)
-      y: 2d array, (samples_num, classes_num)
+    def calculate_dprime(self, auc):
+        standard_normal = norm()
+        return standard_normal.ppf(auc) * np.sqrt(2.0)
 
-    Returns:
-      stats: list of statistics of each class.
-    """
+    def log_classmetrics(self, metrics: List[ClassMetrics]):
+        # sort metrics
+        best_class_metrics = sorted(
+            metrics, key=lambda classmetrics: -getattr(classmetrics, self.class_sort_key))
+        worst_class_metrics = sorted(
+            metrics, key=lambda classmetrics: getattr(classmetrics, self.class_sort_key))
 
-    classes_num = y.shape[-1]
-    stats = []
+        logging.info("  Best music classes:")
+        for classmetrics in best_class_metrics[:self.show_top_classes]:
+            logging.info(classmetrics)
 
-    # Class-wise statistics
-    for i in range(classes_num):
-        class_stats = calculate_class_stats(output, y, i)
-        stats.append(class_stats)
+        logging.info("  Worst music classes:")
+        for classmetrics in worst_class_metrics[:self.show_top_classes]:
+            logging.info(classmetrics)
 
-    return stats
-
-
-def calculate_class_stats(output, y_true, class_index):
-
-    # Average precision
-    avg_precision = metrics.average_precision_score(
-        y_true[:, class_index], output[:, class_index], average=None)
-
-    # AUC
-    if y_true.shape[1] > 1:
-        auc = metrics.roc_auc_score(
-            y_true[:, class_index], output[:, class_index], average=None)
-    else:
-        auc = 0
-
-    # precission and recall
-    precision = metrics.precision_score(
-        y_true[:, class_index], output[:, class_index] >= 0.5)
-    recall = metrics.recall_score(
-        y_true[:, class_index], output[:, class_index] >= 0.5)
-    f1 = metrics.f1_score(y_true[:, class_index], output[:, class_index] >= 0.5)
-
-    # confusion matrix
-    tn, fp, fn, tp = metrics.confusion_matrix(
-        y_true[:, class_index], output[:, class_index] >= 0.5).ravel()
-
-    class_stats = {
-        'AP': avg_precision,
-        'auc': auc,
-        'precision': precision,
-        'recall': recall,
-        'f1': f1,
-        'tp': tp,
-        'fp': fp,
-        'tn': tn,
-        'fn': fn,
-    }
-    return class_stats
-
-
-def d_prime(auc):
-    standard_normal = norm()
-    d_prime = standard_normal.ppf(auc) * np.sqrt(2.0)
-    return d_prime
-
-
-def log_metrics_per_class(stats, music_classes, sortkey='AP', top=10):
-
-    music_classes_stats = []
-    for index, class_info in enumerate(music_classes):
-        # class_index = audioset.utils.get_entity_class_index(class_info['id'])
-
-        music_stats = dict(stats[index])
-        music_stats['name'] = class_info['name']
-        music_classes_stats.append(music_stats)
-
-    best_music_classes_stats = sorted(
-        music_classes_stats, key=lambda k: -k[sortkey])
-    worst_music_classes_stats = sorted(
-        music_classes_stats, key=lambda k: k[sortkey])
-
-
-    
-
-    # logging.info best
-    logging.info("  Best music classes:")
-    for class_info in best_music_classes_stats[:top]:
-        logging.info("      {}  -  map: {:.6f}, auc: {:.6f}, precision: {:.6f}, recall: {:.6f}, f1: {:.6f}, tp: {:.6f}, fp: {:.6f}, tn: {:.6f}, fn: {:.6f}".format(
-            class_info['name'],
-            class_info['AP'],
-            class_info['auc'],
-            class_info['precision'],
-            class_info['recall'],
-            class_info['f1'],
-            class_info['tp'],
-            class_info['fp'],
-            class_info['tn'],
-            class_info['fn'],
-        ))
-
-    # logging.info worst
-    logging.info("  Worst music classes:")
-    for class_info in worst_music_classes_stats[:top]:
-        logging.info("      {}  -  map: {:.6f}, auc: {:.6f}, precision: {:.6f}, recall: {:.6f}, f1: {:.6f}, tp: {:.6f}, fp: {:.6f}, tn: {:.6f}, fn: {:.6f}".format(
-            class_info['name'],
-            class_info['AP'],
-            class_info['auc'],
-            class_info['precision'],
-            class_info['recall'],
-            class_info['f1'],
-            class_info['tp'],
-            class_info['fp'],
-            class_info['tn'],
-            class_info['fn'],
-        ))
-
-    return music_classes_stats
+    def save_classmetrics(self, metrics: List[ClassMetrics]):
+        keys = metrics[0]._fields
+        with open(self.classsmetrics_filepath, 'w') as output_file:
+            writer = csv.DictWriter(output_file, keys)
+            writer.writeheader()
+            writer.writerows([m._asdict() for m in metrics])
