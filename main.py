@@ -2,13 +2,13 @@ import os
 import argparse
 import logging
 from datetime import datetime
-from mgc.experiments import bayes, deep, base
-
+from mgc.experiments import bayes, deep, svm, base
 
 
 EXPERIMENTS = {
     'bayes': bayes.BayesExperiment,
-    'deep': deep.DeepExperiment
+    'deep': deep.DeepExperiment,
+    'svm': svm.SVMExperiment
 }
 
 
