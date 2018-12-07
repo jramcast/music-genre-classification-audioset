@@ -2,7 +2,7 @@ import os
 import argparse
 import logging
 from datetime import datetime
-from mgc.experiments import bayes, deep, svm
+from mgc.experiments import bayes, deep, svm, base
 
 
 EXPERIMENTS = {
@@ -27,16 +27,22 @@ def parse_args():
 
 
 def setup_logging(args):
-    balanced = 'bal' if args.balanced else 'unbal'
-    logfile = 'logs/{}_{}_{}.log'.format(
-        args.experiment,
-        balanced,
-        datetime.now().isoformat()
-    )
+    logfile = get_output_filepath(args)
     logging.basicConfig(
         level=logging.INFO,
         filename=logfile,
         format='%(asctime)s %(message)s')
+
+
+def get_output_filepath(args, extension='log'):
+    balanced = 'bal' if args.balanced else 'unbal'
+    logfile = 'logs/{}_{}_{}.{}'.format(
+        args.experiment,
+        balanced,
+        datetime.now().isoformat(),
+        extension
+    )
+    return logfile
 
 
 def setup_datadir():
@@ -53,6 +59,10 @@ if __name__ == "__main__":
     args = parse_args()
     setup_logging(args)
     datadir = setup_datadir()
-    Experiment = EXPERIMENTS[args.experiment]
-    experiment = Experiment(datadir, balanced=args.balanced)
+    ConcreteExperiment = EXPERIMENTS[args.experiment]
+    experiment: base.Experiment = ConcreteExperiment(
+        datadir,
+        balanced=args.balanced,
+        stats_filepath=get_output_filepath(args, extension='csv'),
+    )
     experiment.run()
