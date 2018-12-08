@@ -2,14 +2,43 @@ import os
 import argparse
 import logging
 from datetime import datetime
-from mgc.experiments import bayes, deep, svm, base
+from mgc.experiments import bayes, deep, svm
+from mgc.persistence import (SklearnModelPersistence,
+                             KerasModelPersistence)
+
+from mgc.evaluation import (SklearnModelEvaluator,
+                            KerasModelEvaluator)
+
+from mgc.dataloading import (NumpyMusicGenreSetLoader,
+                             TFMusicGenreSetLoader)
+
+
+# Configuration of EXPERIMENTS
 
 
 EXPERIMENTS = {
-    'bayes': bayes.BayesExperiment,
-    'deep': deep.DeepExperiment,
-    'svm': svm.SVMExperiment
+    'bayes': lambda args: bayes.BayesExperiment(
+        data_loader=NumpyMusicGenreSetLoader(setup_datadir()),
+        evaluator=SklearnModelEvaluator(get_output_filepath(args, extension='csv')),
+        persistence=SklearnModelPersistence(saved_model_filepath('bayes.joblib')),
+        balanced=args.balanced
+    ),
+    # 'deep': lambda args: deep.DeepExperiment(
+    #     data_loader=TFMusicGenreSetLoader(setup_datadir()),
+    #     evaluator=KerasModelEvaluator(get_output_filepath(args, extension='csv')),
+    #     persistence=KerasModelPersistence(saved_model_filepath('deep_wt.h5')),
+    #     balanced=args.balanced
+    # ),
+    # 'svm': lambda args: svm.SVMExperiment(
+    #     data_loader=NumpyMusicGenreSetLoader(setup_datadir()),
+    #     evaluator=SklearnModelEvaluator(get_output_filepath(args, extension='csv')),
+    #     persistence=SklearnModelPersistence(saved_model_filepath('svm.joblib')),
+    #     balanced=args.balanced
+    # )
 }
+
+
+# Support functions
 
 
 def parse_args():
@@ -39,7 +68,7 @@ def get_output_filepath(args, extension='log'):
     logfile = 'logs/{}_{}_{}.{}'.format(
         args.experiment,
         balanced,
-        datetime.now().isoformat(),
+        datetime.now().strftime("%Y-%m-%d_%H.%M.%S"),
         extension
     )
     return logfile
@@ -55,14 +84,18 @@ def setup_datadir():
     return datadir
 
 
+def saved_model_filepath(filename):
+    return os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        'saved_models',
+        filename
+    )
+
+
+# Run main program
+
 if __name__ == "__main__":
     args = parse_args()
     setup_logging(args)
-    datadir = setup_datadir()
-    ConcreteExperiment = EXPERIMENTS[args.experiment]
-    experiment: base.Experiment = ConcreteExperiment(
-        datadir,
-        balanced=args.balanced,
-        classmetrics_filepath=get_output_filepath(args, extension='csv'),
-    )
+    experiment = EXPERIMENTS[args.experiment](args)
     experiment.run()

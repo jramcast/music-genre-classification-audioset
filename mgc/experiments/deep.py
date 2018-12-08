@@ -1,11 +1,8 @@
 import os
-import logging
 import math
 import tempfile
 
 import keras
-import numpy as np
-import tensorflow as tf
 from keras.layers import (Activation, BatchNormalization, Dense, Dropout,
                           Flatten, Input)
 
@@ -25,6 +22,7 @@ class DeepExperiment(Experiment):
         self.batch_size = batch_size
         self.num_units = 100
         self.drop_rate = 0.5
+        self.weights_filepath = os.path.join(tempfile.gettempdir(), 'deep_wt.h5')
 
     def run(self):
         """
@@ -32,6 +30,7 @@ class DeepExperiment(Experiment):
         """
         X, y, X_test, y_test = self.load_data()
         self.train_and_eval(X, y, X_test, y_test)
+        self.evaluate(X_test, y_test)
         print('Done. Check the logs/ folder for results')
 
     def load_data(self):
@@ -60,34 +59,37 @@ class DeepExperiment(Experiment):
     def train_and_eval(self, X, y, X_test, y_test):
 
         model = self.build_model(X)
-        model.compile(optimizer=keras.optimizers.Adam(lr=1e-3),
-                      loss='binary_crossentropy',
-                      target_tensors=[y])
+        model.compile(
+            optimizer=keras.optimizers.Adam(lr=1e-3),
+            loss='binary_crossentropy',
+            metrics=['top_k_categorical_accuracy'],
+            target_tensors=[y]
+        )
 
         if self.balanced:
             total_samples = 2490
         else:
             total_samples = 200000
 
-        # metrics_cb = Metrics(X_test, y_test)
         model.fit(
             epochs=self.epochs,
-            # callbacks=[metrics_cb],
             steps_per_epoch=math.ceil(total_samples/self.batch_size))
 
         # Save the model weights.
-        weight_path = os.path.join(tempfile.gettempdir(), 'saved_wt.h5')
-        model.save_weights(weight_path)
+        model.save_weights(self.weights_filepath)
 
         # Clean up the TF session.
         K.clear_session()
 
+    def evaluate(self, X_test, y_test):
         # Second session to test loading trained model without tensors.
         input_layer = Input(shape=(10, 128))
         output_layer = self.define_layers(input_layer)
-        test_model = keras.models.Model(inputs=input_layer, outputs=output_layer)
-
-        test_model.load_weights(weight_path)
+        test_model = keras.models.Model(
+            inputs=input_layer,
+            outputs=output_layer
+        )
+        test_model.load_weights(self.weights_filepath)
         test_model.compile(
             optimizer=keras.optimizers.Adam(lr=1e-3),
             loss='binary_crossentropy'
@@ -101,8 +103,6 @@ class DeepExperiment(Experiment):
             audioset.ontology.MUSIC_GENRE_CLASSES,
             num_classes=25
         )
-
-        return model
 
     def define_layers(self, input):
         # The input layer flattens the 10 seconds as a single dimension of 1280
@@ -128,48 +128,3 @@ class DeepExperiment(Experiment):
 
         # Build model
         return keras.models.Model(inputs=input_layer, outputs=output_layer)
-
-
-class Metrics(keras.callbacks.Callback):
-
-    def __init__(self, X, y):
-        self.X = X
-        self.y = y
-        return super().__init__()
-
-    def on_train_begin(self, logs={}):
-        self.data = []
-
-    # def on_train_end(self, logs=None):
-    #     logging.info("- FINAL statistics:")
-    #     y_pred = self.model.predict(self.X, steps=1)
-    #     y_true = self.y.eval(session=tf.keras.backend.get_session())
-    #     metrics.get_avg_stats(
-    #         y_pred,
-    #         y_true,
-    #         audioset.MUSIC_GENRE_CLASSES,
-    #         num_classes=10
-    #     )
-
-    def on_epoch_end(self, epoch, logs={}):
-        # if epoch % 10 == 0:
-        logging.info('Epoch {} stats'.format(epoch))
-
-        with tf.Session() as sess:
-            X, y = sess.run((self.X, self.y))
-            # print('**' * 50)
-            # print('X shape', X.shape)
-            # print('y_true shape', y.shape)
-            X = tf.convert_to_tensor([])
-            print('X tensor', X.shape)
-
-        y_pred = self.model.predict(None, steps=3)
-
-        print('y_pred shape', y_pred.shape)
-        print('--' * 50)
-
-        # y_true = self.y.eval(session=tf.keras.backend.get_session())
-        # metrics.get_avg_stats(
-        #     y_pred,
-        #     y_true
-        # )
