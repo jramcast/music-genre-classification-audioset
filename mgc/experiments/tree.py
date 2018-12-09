@@ -1,13 +1,12 @@
 import logging
 import time
 
-from sklearn.multiclass import OneVsRestClassifier
-from sklearn.naive_bayes import GaussianNB
+from sklearn.tree import DecisionTreeClassifier
 
 from mgc.experiments.base import Experiment
 
 
-class BayesExperiment(Experiment):
+class DecisionTreeExperiment(Experiment):
 
     def run(self):
         '''
@@ -23,7 +22,7 @@ class BayesExperiment(Experiment):
         print('Done. Check the logs/ folder for results')
 
     def train(self, X, y):
-        model = OneVsRestClassifier(GaussianNB(), n_jobs=4)
+        model = DecisionTreeClassifier()
         logging.info('Model: %s', model)
 
         logging.info('Training...')

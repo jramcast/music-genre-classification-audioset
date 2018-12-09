@@ -28,5 +28,5 @@ class KerasModelPersistence(Persistence):
         logging.info('Model weights saved to {}'.format(self.filepath))
 
     def load(self, model) -> Model:
-        model.load_weights(self.weights_filepath)
+        model.load_weights(self.filepath)
         return model

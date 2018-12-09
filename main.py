@@ -2,7 +2,7 @@ import os
 import argparse
 import logging
 from datetime import datetime
-from mgc.experiments import bayes, deep, svm
+from mgc.experiments import bayes, deep, tree, svm, lstm
 from mgc.persistence import (SklearnModelPersistence,
                              KerasModelPersistence)
 
@@ -23,18 +23,32 @@ EXPERIMENTS = {
         persistence=SklearnModelPersistence(saved_model_filepath('bayes.joblib')),
         balanced=args.balanced
     ),
-    # 'deep': lambda args: deep.DeepExperiment(
-    #     data_loader=TFMusicGenreSetLoader(setup_datadir()),
-    #     evaluator=KerasModelEvaluator(get_output_filepath(args, extension='csv')),
-    #     persistence=KerasModelPersistence(saved_model_filepath('deep_wt.h5')),
-    #     balanced=args.balanced
-    # ),
-    # 'svm': lambda args: svm.SVMExperiment(
-    #     data_loader=NumpyMusicGenreSetLoader(setup_datadir()),
-    #     evaluator=SklearnModelEvaluator(get_output_filepath(args, extension='csv')),
-    #     persistence=SklearnModelPersistence(saved_model_filepath('svm.joblib')),
-    #     balanced=args.balanced
-    # )
+    'deep': lambda args: deep.DeepExperiment(
+        data_loader=TFMusicGenreSetLoader(setup_datadir()),
+        evaluator=KerasModelEvaluator(get_output_filepath(args, extension='csv')),
+        persistence=KerasModelPersistence(saved_model_filepath('deep_wt.h5')),
+        balanced=args.balanced,
+        epochs=args.epochs
+    ),
+    'lstm': lambda args: lstm.LSTMExperiment(
+        data_loader=TFMusicGenreSetLoader(setup_datadir()),
+        evaluator=KerasModelEvaluator(get_output_filepath(args, extension='csv')),
+        persistence=KerasModelPersistence(saved_model_filepath('lstm_wt.h5')),
+        balanced=args.balanced,
+        epochs=args.epochs
+    ),
+    'svm': lambda args: svm.SVMExperiment(
+        data_loader=NumpyMusicGenreSetLoader(setup_datadir()),
+        evaluator=SklearnModelEvaluator(get_output_filepath(args, extension='csv')),
+        persistence=SklearnModelPersistence(saved_model_filepath('svm.joblib')),
+        balanced=args.balanced
+    ),
+    'tree': lambda args: tree.DecisionTreeExperiment(
+        data_loader=NumpyMusicGenreSetLoader(setup_datadir()),
+        evaluator=SklearnModelEvaluator(get_output_filepath(args, extension='csv')),
+        persistence=SklearnModelPersistence(saved_model_filepath('tree.joblib')),
+        balanced=args.balanced
+    )
 }
 
 
@@ -51,6 +65,11 @@ def parse_args():
     parser.add_argument(
         '--balanced',
         action='store_true'
+    )
+    parser.add_argument(
+        '--epochs',
+        type=int,
+        default=50
     )
     return parser.parse_args()
 

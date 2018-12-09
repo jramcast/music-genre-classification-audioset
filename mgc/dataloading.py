@@ -4,7 +4,7 @@ from typing import Tuple
 import numpy as np
 import tensorflow as tf
 
-from mgc import audioset
+from mgc.audioset.loaders import MusicGenreSubsetLoader
 from mgc.audioset.transform import flatten_features, tensor_to_numpy
 from mgc.experiments.base import DatasetLoader
 
@@ -22,7 +22,7 @@ class NumpyMusicGenreSetLoader(DatasetLoader):
         Returns a tuple including train and test sets
         as np arrays: (X, y, X_test, y_test)
         """
-        loader = audioset.loaders.MusicGenreSubsetLoader(
+        loader = MusicGenreSubsetLoader(
             self.datadir,
             repeat=repeat
         )
@@ -63,7 +63,7 @@ class TFMusicGenreSetLoader(DatasetLoader):
         Train set is loaded as TF Tensors
         Test set is loaded as np arrays
         """
-        loader = audioset.loaders.MusicGenreSubsetLoader(
+        loader = MusicGenreSubsetLoader(
             self.datadir,
             repeat=True,
             batch_size=batch_size
@@ -74,10 +74,10 @@ class TFMusicGenreSetLoader(DatasetLoader):
         else:
             ids, X, y = loader.load_unbal()
 
-        test_loader = audioset.loaders.MusicGenreSubsetLoader(
+        test_loader = MusicGenreSubsetLoader(
             self.datadir,
             repeat=False,
-            batch_size=batch_size
+            batch_size=2500
         )
         ids_test, X_test, y_test = test_loader.load_eval()
         ids_test, X_test, y_test = tensor_to_numpy(ids_test, X_test, y_test)

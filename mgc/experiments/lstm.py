@@ -6,14 +6,14 @@ import keras
 import keras.backend as K
 from keras.models import Model
 from keras.layers import (Activation, BatchNormalization, Dense, Dropout,
-                          Flatten, Input)
+                          Flatten, Input, LSTM, concatenate)
 
 from mgc import audioset
 from mgc.experiments.base import (DatasetLoader, Evaluator, Experiment,
                                   Persistence)
 
 
-class DeepExperiment(Experiment):
+class LSTMExperiment(Experiment):
 
     def __init__(
             self,
@@ -92,20 +92,15 @@ class DeepExperiment(Experiment):
         )
         self.evaluator.evaluate(test_model, X, y, X_test, y_test)
 
-    def define_layers(self, input):
+    def define_layers(self, inputs):
         # The input layer flattens the 10 seconds as a single dimension of 1280
-        reshape = Flatten(input_shape=(-1, 10, 128))(input)
+        # reshape = Flatten(input_shape=(-1, 10, 128))(inputs)
 
-        l1 = Dense((self.num_units))(reshape)
+        l1 = LSTM(1280, return_sequences=False)(inputs)
         l1 = BatchNormalization()(l1)
         l1 = Activation('relu')(l1)
         l1 = Dropout(self.drop_rate)(l1)
 
-        l2 = Dense(self.num_units)(l1)
-        l2 = BatchNormalization()(l2)
-        l2 = Activation('relu')(l2)
-        l2 = Dropout(self.drop_rate)(l2)
-
         classes_num = len(audioset.ontology.MUSIC_GENRE_CLASSES)
-        predictions = Dense(classes_num, activation='sigmoid')(l2)
+        predictions = Dense(classes_num, activation='sigmoid')(l1)
         return predictions
