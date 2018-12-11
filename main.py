@@ -80,6 +80,7 @@ def setup_logging(args):
         level=logging.INFO,
         filename=logfile,
         format='%(asctime)s %(message)s')
+    logging.info(args)
 
 
 def get_output_filepath(args, extension='log'):
