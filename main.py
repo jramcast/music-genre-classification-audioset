@@ -19,34 +19,44 @@ from mgc.dataloading import (NumpyMusicGenreSetLoader,
 EXPERIMENTS = {
     'bayes': lambda args: bayes.BayesExperiment(
         data_loader=NumpyMusicGenreSetLoader(setup_datadir()),
-        evaluator=SklearnModelEvaluator(get_output_filepath(args, extension='csv')),
-        persistence=SklearnModelPersistence(saved_model_filepath('bayes.joblib')),
+        evaluator=SklearnModelEvaluator(
+            get_output_filepath(args, extension='csv')),
+        persistence=SklearnModelPersistence(
+            saved_model_filepath('bayes.joblib', args)),
         balanced=args.balanced
     ),
     'deep': lambda args: deep.DeepExperiment(
         data_loader=TFMusicGenreSetLoader(setup_datadir()),
-        evaluator=KerasModelEvaluator(get_output_filepath(args, extension='csv')),
-        persistence=KerasModelPersistence(saved_model_filepath('deep_wt.h5')),
+        evaluator=KerasModelEvaluator(
+            get_output_filepath(args, extension='csv')),
+        persistence=KerasModelPersistence(
+            saved_model_filepath('deep_wt.h5', args)),
         balanced=args.balanced,
         epochs=args.epochs
     ),
     'lstm': lambda args: lstm.LSTMExperiment(
         data_loader=TFMusicGenreSetLoader(setup_datadir()),
-        evaluator=KerasModelEvaluator(get_output_filepath(args, extension='csv')),
-        persistence=KerasModelPersistence(saved_model_filepath('lstm_wt.h5')),
+        evaluator=KerasModelEvaluator(
+            get_output_filepath(args, extension='csv')),
+        persistence=KerasModelPersistence(
+            saved_model_filepath('lstm_wt.h5', args)),
         balanced=args.balanced,
         epochs=args.epochs
     ),
     'svm': lambda args: svm.SVMExperiment(
         data_loader=NumpyMusicGenreSetLoader(setup_datadir()),
-        evaluator=SklearnModelEvaluator(get_output_filepath(args, extension='csv')),
-        persistence=SklearnModelPersistence(saved_model_filepath('svm.joblib')),
+        evaluator=SklearnModelEvaluator(
+            get_output_filepath(args, extension='csv')),
+        persistence=SklearnModelPersistence(
+            saved_model_filepath('svm.joblib', args)),
         balanced=args.balanced
     ),
     'tree': lambda args: tree.DecisionTreeExperiment(
         data_loader=NumpyMusicGenreSetLoader(setup_datadir()),
-        evaluator=SklearnModelEvaluator(get_output_filepath(args, extension='csv')),
-        persistence=SklearnModelPersistence(saved_model_filepath('tree.joblib')),
+        evaluator=SklearnModelEvaluator(
+            get_output_filepath(args, extension='csv')),
+        persistence=SklearnModelPersistence(
+            saved_model_filepath('tree.joblib', args)),
         balanced=args.balanced
     )
 }
@@ -104,11 +114,17 @@ def setup_datadir():
     return datadir
 
 
-def saved_model_filepath(filename):
+def saved_model_filepath(filename, args):
+    final_filename = filename
+    if (args.balanced):
+        final_filename = 'bal_{}'.format(filename)
+    else:
+        final_filename = 'unbal_{}'.format(filename)
+
     return os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         'saved_models',
-        filename
+        final_filename
     )
 
 
