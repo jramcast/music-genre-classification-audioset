@@ -45,7 +45,9 @@ class MetricsLogger:
         # Log average metrics among all classes
         m_ap = np.mean([classmetrics.ap for classmetrics in metrics])
         m_auc = np.mean([classmetrics.auc for classmetrics in metrics])
-        m_precision = np.mean([classmetrics.precision for classmetrics in metrics])
+        m_precision = np.mean(
+            [classmetrics.precision for classmetrics in metrics]
+        )
         m_recall = np.mean([classmetrics.recall for classmetrics in metrics])
         f1 = np.mean([classmetrics.f1 for classmetrics in metrics])
         dprime = self.calculate_dprime(m_auc)
@@ -147,9 +149,14 @@ class MetricsLogger:
     def log_classmetrics(self, metrics: List[ClassMetrics]):
         # sort metrics
         best_class_metrics = sorted(
-            metrics, key=lambda classmetrics: -getattr(classmetrics, self.class_sort_key))
+            metrics,
+            key=lambda classmetrics: -getattr(
+                classmetrics, self.class_sort_key)
+        )
         worst_class_metrics = sorted(
-            metrics, key=lambda classmetrics: getattr(classmetrics, self.class_sort_key))
+            metrics,
+            key=lambda classmetrics: getattr(classmetrics, self.class_sort_key)
+        )
 
         logging.info("  Best music classes:")
         for classmetrics in best_class_metrics[:self.show_top_classes]:

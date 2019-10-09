@@ -6,7 +6,7 @@ import keras
 import keras.backend as K
 from keras.models import Model
 from keras.layers import (Activation, BatchNormalization, Dense, Dropout,
-                          Flatten, Input, LSTM, concatenate)
+                          Input, LSTM)
 
 from mgc import audioset
 from mgc.experiments.base import (DatasetLoader, Evaluator, Experiment,

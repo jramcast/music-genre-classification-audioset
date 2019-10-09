@@ -1,6 +1,5 @@
 import os
 import csv
-import numpy as np
 from mgc.audioset import ontology
 from mgc.audioset.loaders import MusicGenreSubsetLoader
 from mgc.audioset.transform import tensor_to_numpy
