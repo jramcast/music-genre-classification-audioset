@@ -110,7 +110,7 @@ def setup_datadir():
         './downloads/audioset/audioset_v1_embeddings/'
     )
     datadir = os.path.abspath(datadir)
-    logging.debug('Data dir: {}'.format(datadir))
+    logging.info('Data dir: {}'.format(datadir))
     return datadir
 
 
