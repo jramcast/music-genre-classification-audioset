@@ -9,6 +9,12 @@ Music genre classification is one of the sub-disciplines of music information re
 
 A pre-print of the article on Arxiv: https://arxiv.org/abs/1911.12618.
 
+### Demo
+
+I've setup an online demo webapp to show how models trained with this repository work in practice.
+
+https://jramcast.github.io/mgr-app/
+
 
 ### Usage
 
