@@ -7,7 +7,7 @@ Code repository for experiments conducted in the study
 
 Music genre classification is one of the sub-disciplines of music information retrieval (MIR) with growing popularity among researchers, mainly due to the already open challenges. Although research has been prolific in terms of number of published works, the topic still suffers from a problem in its foundations: there is no clear and formal definition of what genre is. Music categorizations are vague and unclear, suffering from human subjectivity and lack of agreement. In its first part, this paper offers a survey trying to cover the many different aspects of the matter. Its main goal is give the reader an overview of the history and the current state-of-the-art, exploring techniques and datasets used to the date, as well as identifying current challenges, such as this ambiguity of genre definitions or the introduction of human-centric approaches. The paper pays special attention to new trends in machine learning applied to the music annotation problem. Finally, we also include a music genre classification experiment that compares different machine learning models using Audioset.
 
-A pre-print of the article on Arxiv: https://arxiv.org/abs/1911.12618.
+Read the article here: https://rdcu.be/b87uq
 
 ### Demo
 
